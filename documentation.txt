@@ -1,0 +1,57 @@
+Gym Website - Backend API DocumentationThis is the official REST API documentation for the Gym Website application backend. Built with Node.js, Express.js, and MongoDB (Mongoose).🚀 Base URLPlaintexthttp://localhost:5000/api
+📋 Endpoints OverviewMethodEndpointDescriptionAuth RequiredGET/Health check endpoint❌ NoPOST/api/bookingsBook a trial or membership plan❌ NoPOST/api/contactSend a contact message❌ No📂 Endpoints Detail1. Health CheckChecks whether the backend server is running correctly.URL: /Method: GETSuccess Response:Code: 200 OKContent: "Gym Website API Running..."2. Create Trial / Membership BookingSaves a new session booking request in the database.URL: /api/bookingsMethod: POSTHeaders:HTTPContent-Type: application/json
+Request BodyJSON{
+  "fullName": "Rahul Sharma",
+  "email": "rahul@example.com",
+  "phone": "9876543210",
+  "plan": "Pro Athlete",
+  "preferredDate": "2026-08-01",
+  "preferredTime": "Morning (8:00 AM)",
+  "fitnessGoal": "Muscle Gain"
+}
+Fields DescriptionFieldTypeRequiredDefaultAllowed Values / ExamplefullNameStringYes—"Rahul Sharma"emailStringYes—"rahul@example.com"phoneStringYes—"9876543210"planStringNo"Free Trial""Free Trial", "Basic Access", "Pro Athlete", "VIP Elite"preferredDateDate/StringYes—"YYYY-MM-DD"preferredTimeStringYes—"Morning (8:00 AM)", "Evening (6:00 PM)"fitnessGoalStringYes—"Weight Loss", "Muscle Gain", "Cardio"ResponsesSuccess (201 Created):JSON{
+  "success": true,
+  "message": "Booking successful! Hum aapse jald hi contact karenge.",
+  "data": {
+    "_id": "66a3ef89021b1a45c2f812a1",
+    "fullName": "Rahul Sharma",
+    "email": "rahul@example.com",
+    "phone": "9876543210",
+    "plan": "Pro Athlete",
+    "preferredDate": "2026-08-01T00:00:00.000Z",
+    "preferredTime": "Morning (8:00 AM)",
+    "fitnessGoal": "Muscle Gain",
+    "createdAt": "2026-07-25T11:56:00.000Z",
+    "updatedAt": "2026-07-25T11:56:00.000Z"
+  }
+}
+Validation Error (400 Bad Request):JSON{
+  "success": false,
+  "message": "Sabhi fields fill karna zaroori hai."
+}
+Server Error (500 Internal Server Error):JSON{
+  "success": false,
+  "message": "Server Error: [error details]"
+}
+3. Submit Contact FormStores a user's contact query or message in the database.URL: /api/contactMethod: POSTHeaders:HTTPContent-Type: application/json
+Request BodyJSON{
+  "name": "Priya Verma",
+  "email": "priya@example.com",
+  "message": "Hi, what are the gym timings on weekends?"
+}
+ResponsesSuccess (201 Created):JSON{
+  "success": true,
+  "message": "Message submit ho gaya hai!",
+  "data": {
+    "_id": "66a3f01b021b1a45c2f812a5",
+    "name": "Priya Verma",
+    "email": "priya@example.com",
+    "message": "Hi, what are the gym timings on weekends?",
+    "createdAt": "2026-07-25T11:56:00.000Z",
+    "updatedAt": "2026-07-25T11:56:00.000Z"
+  }
+}
+Validation Error (400 Bad Request):JSON{
+  "success": false,
+  "message": "Sabhi fields fill karein."
+}
