@@ -151,3 +151,36 @@ exports.updateUserProfile = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
   }
 };
+// @desc    Get all registered members (For Admin Panel)
+// @route   GET /api/auth/members
+exports.getAllMembers = async (req, res) => {
+  try {
+    const members = await User.find({ role: 'member' }).select('-password').sort({ createdAt: -1 });
+    res.status(200).json({ success: true, count: members.length, data: members });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
+  }
+};
+
+// @desc    Admin Updates Member Plan / Trainer
+// @route   PUT /api/auth/members/:id
+exports.updateMemberByAdmin = async (req, res) => {
+  try {
+    const { activePlan, assignedTrainer, enrolledProgram } = req.body;
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Member nahi mila.' });
+    }
+
+    if (activePlan) user.activePlan = activePlan;
+    if (assignedTrainer) user.assignedTrainer = assignedTrainer;
+    if (enrolledProgram) user.enrolledProgram = enrolledProgram;
+
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Member plan & trainer updated!', data: user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
+  }
+};

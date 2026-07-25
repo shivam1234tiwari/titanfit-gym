@@ -1,6 +1,178 @@
-Gym Website - Backend API DocumentationThis is the official REST API documentation for the Gym Website application backend. Built with Node.js, Express.js, and MongoDB (Mongoose).🚀 Base URLPlaintexthttp://localhost:5000/api
-📋 Endpoints OverviewMethodEndpointDescriptionAuth RequiredGET/Health check endpoint❌ NoPOST/api/bookingsBook a trial or membership plan❌ NoPOST/api/contactSend a contact message❌ No📂 Endpoints Detail1. Health CheckChecks whether the backend server is running correctly.URL: /Method: GETSuccess Response:Code: 200 OKContent: "Gym Website API Running..."2. Create Trial / Membership BookingSaves a new session booking request in the database.URL: /api/bookingsMethod: POSTHeaders:HTTPContent-Type: application/json
-Request BodyJSON{
+TITANFIT Gym Website - Complete Backend API Documentation
+This is the official REST API documentation for the TITANFIT Gym Management Application backend. Built with Node.js, Express.js, JWT (JSON Web Tokens), and MongoDB (Mongoose).
+
+🚀 Base URL
+Plaintext
+http://localhost:5000/api
+📋 Endpoints Overview
+Method	Endpoint	Description	Auth Required
+GET	/	Health check endpoint	❌ No
+POST	/api/auth/register	Register a new member account	❌ No
+POST	/api/auth/login	Authenticate user & receive JWT	❌ No
+GET	/api/auth/profile	Get current logged-in user profile	🔒 Yes (Bearer Token)
+PUT	/api/auth/profile	Update member metrics (weight/height/goal)	🔒 Yes (Bearer Token)
+POST	/api/bookings	Book a trial or membership session	❌ No
+GET	/api/bookings	Fetch all bookings (Admin view)	❌ No
+PUT	/api/bookings/:id	Update booking status or add admin note	❌ No
+POST	/api/contact	Submit a contact query / message	❌ No
+GET	/api/contact	Fetch all contact messages (Admin view)	❌ No
+PUT	/api/contact/:id	Reply to a contact message	❌ No
+📂 Endpoints Detail
+1. General & Health Check
+🔹 Check API Status
+URL: /
+
+Method: GET
+
+Success Response: 200 OK
+
+Plaintext
+"Gym Website API Running..."
+2. Authentication & User Profile APIs (/api/auth)
+🔹 Register New Member
+Creates a new member account and returns a JWT token.
+
+URL: /api/auth/register
+
+Method: POST
+
+Headers: Content-Type: application/json
+
+Request Body:
+
+JSON
+{
+  "name": "Rahul Sharma",
+  "email": "rahul@example.com",
+  "password": "password123",
+  "fitnessGoal": "Muscle Gain",
+  "weightKg": 72,
+  "heightCm": 178
+}
+Success Response (201 Created):
+
+JSON
+{
+  "success": true,
+  "message": "Registration successful!",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "66a3ef89021b1a45c2f812a1",
+    "name": "Rahul Sharma",
+    "email": "rahul@example.com",
+    "role": "member",
+    "activePlan": "Free Trial",
+    "enrolledProgram": "General Fitness"
+  }
+}
+🔹 User Login
+Authenticates member credentials and issues a token.
+
+URL: /api/auth/login
+
+Method: POST
+
+Headers: Content-Type: application/json
+
+Request Body:
+
+JSON
+{
+  "email": "rahul@example.com",
+  "password": "password123"
+}
+Success Response (200 OK):
+
+JSON
+{
+  "success": true,
+  "message": "Login successful!",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "66a3ef89021b1a45c2f812a1",
+    "name": "Rahul Sharma",
+    "email": "rahul@example.com",
+    "role": "member",
+    "activePlan": "Pro Athlete",
+    "enrolledProgram": "Strength & Power"
+  }
+}
+🔹 Get Logged-in User Profile
+Fetches current user's profile details and fitness measurements.
+
+URL: /api/auth/profile
+
+Method: GET
+
+Headers:
+
+HTTP
+Authorization: Bearer <YOUR_JWT_TOKEN>
+Success Response (200 OK):
+
+JSON
+{
+  "success": true,
+  "data": {
+    "_id": "66a3ef89021b1a45c2f812a1",
+    "name": "Rahul Sharma",
+    "email": "rahul@example.com",
+    "role": "member",
+    "activePlan": "Pro Athlete",
+    "enrolledProgram": "Strength & Power",
+    "assignedTrainer": "Marcus Vance",
+    "weightKg": 72,
+    "heightCm": 178,
+    "fitnessGoal": "Muscle Gain",
+    "createdAt": "2026-07-25T11:56:00.000Z"
+  }
+}
+🔹 Update User Profile Metrics
+Updates body measurements (Weight, Height, Fitness Goal).
+
+URL: /api/auth/profile
+
+Method: PUT
+
+Headers:
+
+HTTP
+Authorization: Bearer <YOUR_JWT_TOKEN>
+Content-Type: application/json
+Request Body:
+
+JSON
+{
+  "weightKg": 74,
+  "heightCm": 178,
+  "fitnessGoal": "Hypertrophy"
+}
+Success Response (200 OK):
+
+JSON
+{
+  "success": true,
+  "message": "Profile updated successfully!",
+  "data": {
+    "id": "66a3ef89021b1a45c2f812a1",
+    "name": "Rahul Sharma",
+    "weightKg": 74,
+    "heightCm": 178,
+    "fitnessGoal": "Hypertrophy"
+  }
+}
+3. Trial Bookings & Plan Requests APIs (/api/bookings)
+🔹 Create Booking Request
+URL: /api/bookings
+
+Method: POST
+
+Headers: Content-Type: application/json
+
+Request Body:
+
+JSON
+{
   "fullName": "Rahul Sharma",
   "email": "rahul@example.com",
   "phone": "9876543210",
@@ -9,7 +181,10 @@ Request BodyJSON{
   "preferredTime": "Morning (8:00 AM)",
   "fitnessGoal": "Muscle Gain"
 }
-Fields DescriptionFieldTypeRequiredDefaultAllowed Values / ExamplefullNameStringYes—"Rahul Sharma"emailStringYes—"rahul@example.com"phoneStringYes—"9876543210"planStringNo"Free Trial""Free Trial", "Basic Access", "Pro Athlete", "VIP Elite"preferredDateDate/StringYes—"YYYY-MM-DD"preferredTimeStringYes—"Morning (8:00 AM)", "Evening (6:00 PM)"fitnessGoalStringYes—"Weight Loss", "Muscle Gain", "Cardio"ResponsesSuccess (201 Created):JSON{
+Success Response (201 Created):
+
+JSON
+{
   "success": true,
   "message": "Booking successful! Hum aapse jald hi contact karenge.",
   "data": {
@@ -21,25 +196,70 @@ Fields DescriptionFieldTypeRequiredDefaultAllowed Values / ExamplefullNameString
     "preferredDate": "2026-08-01T00:00:00.000Z",
     "preferredTime": "Morning (8:00 AM)",
     "fitnessGoal": "Muscle Gain",
-    "createdAt": "2026-07-25T11:56:00.000Z",
-    "updatedAt": "2026-07-25T11:56:00.000Z"
+    "status": "Pending",
+    "adminReply": "",
+    "createdAt": "2026-07-25T11:56:00.000Z"
   }
 }
-Validation Error (400 Bad Request):JSON{
-  "success": false,
-  "message": "Sabhi fields fill karna zaroori hai."
+🔹 Get All Bookings (Admin Portal)
+URL: /api/bookings
+
+Method: GET
+
+Success Response (200 OK):
+
+JSON
+{
+  "success": true,
+  "count": 1,
+  "data": [ /* Array of booking objects */ ]
 }
-Server Error (500 Internal Server Error):JSON{
-  "success": false,
-  "message": "Server Error: [error details]"
+🔹 Update Booking Status & Admin Note
+URL: /api/bookings/:id
+
+Method: PUT
+
+Headers: Content-Type: application/json
+
+Request Body:
+
+JSON
+{
+  "status": "Confirmed",
+  "adminReply": "Slot confirmed! Please arrive 10 minutes early on 1st August."
 }
-3. Submit Contact FormStores a user's contact query or message in the database.URL: /api/contactMethod: POSTHeaders:HTTPContent-Type: application/json
-Request BodyJSON{
+Success Response (200 OK):
+
+JSON
+{
+  "success": true,
+  "message": "Booking status update ho gaya!",
+  "data": {
+    "_id": "66a3ef89021b1a45c2f812a1",
+    "status": "Confirmed",
+    "adminReply": "Slot confirmed! Please arrive 10 minutes early on 1st August."
+  }
+}
+4. Contact Form & Query APIs (/api/contact)
+🔹 Submit Contact Query
+URL: /api/contact
+
+Method: POST
+
+Headers: Content-Type: application/json
+
+Request Body:
+
+JSON
+{
   "name": "Priya Verma",
   "email": "priya@example.com",
   "message": "Hi, what are the gym timings on weekends?"
 }
-ResponsesSuccess (201 Created):JSON{
+Success Response (201 Created):
+
+JSON
+{
   "success": true,
   "message": "Message submit ho gaya hai!",
   "data": {
@@ -47,11 +267,46 @@ ResponsesSuccess (201 Created):JSON{
     "name": "Priya Verma",
     "email": "priya@example.com",
     "message": "Hi, what are the gym timings on weekends?",
-    "createdAt": "2026-07-25T11:56:00.000Z",
-    "updatedAt": "2026-07-25T11:56:00.000Z"
+    "status": "New",
+    "replyMessage": "",
+    "createdAt": "2026-07-25T11:56:00.000Z"
   }
 }
-Validation Error (400 Bad Request):JSON{
-  "success": false,
-  "message": "Sabhi fields fill karein."
+🔹 Get All Messages (Admin Portal)
+URL: /api/contact
+
+Method: GET
+
+Success Response (200 OK):
+
+JSON
+{
+  "success": true,
+  "count": 1,
+  "data": [ /* Array of contact messages */ ]
+}
+🔹 Reply to Contact Message (Admin)
+URL: /api/contact/:id
+
+Method: PUT
+
+Headers: Content-Type: application/json
+
+Request Body:
+
+JSON
+{
+  "replyMessage": "Hello Priya, weekend timings are 6:00 AM to 9:00 PM."
+}
+Success Response (200 OK):
+
+JSON
+{
+  "success": true,
+  "message": "Reply bhej diya gaya hai!",
+  "data": {
+    "_id": "66a3f01b021b1a45c2f812a5",
+    "status": "Replied",
+    "replyMessage": "Hello Priya, weekend timings are 6:00 AM to 9:00 PM."
+  }
 }

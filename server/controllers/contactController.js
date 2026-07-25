@@ -1,5 +1,6 @@
 const Contact = require('../models/Contact');
 
+// @desc Get all contact messages
 exports.getContacts = async (req, res) => {
   try {
     const contacts = await Contact.find().sort({ createdAt: -1 });
@@ -9,6 +10,7 @@ exports.getContacts = async (req, res) => {
   }
 };
 
+// @desc Submit new message
 exports.submitContact = async (req, res) => {
   try {
     const { name, email, message } = req.body;
@@ -22,19 +24,27 @@ exports.submitContact = async (req, res) => {
   }
 };
 
-// 🆕 @desc Admin Replies to Contact Query
+// @desc Admin Replies to Contact Query
 // @route PUT /api/contact/:id
 exports.replyToContact = async (req, res) => {
   try {
     const { replyMessage } = req.body;
+
     const contact = await Contact.findByIdAndUpdate(
       req.params.id,
-      { replyMessage, status: 'Replied' },
-      { new: true }
+      { 
+        replyMessage, 
+        status: 'Replied' 
+      },
+      { new: true, runValidators: true }
     );
-    if (!contact) return res.status(404).json({ success: false, message: 'Message nahi mila.' });
+
+    if (!contact) {
+      return res.status(404).json({ success: false, message: 'Message record nahi mila.' });
+    }
+
     res.status(200).json({ success: true, message: 'Reply bhej diya gaya hai!', data: contact });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error' });
+    res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
   }
 };

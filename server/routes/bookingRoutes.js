@@ -1,8 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { createBooking, getBookings } = require('../controllers/bookingController');
+const { 
+  createBooking, 
+  getBookings, 
+  updateBooking 
+} = require('../controllers/bookingController');
 
-router.post('/', createBooking);
-router.get('/', getBookings); // 👈 Added GET route
+// GET all & POST new booking
+router.route('/')
+  .get(getBookings)
+  .post(createBooking);
+
+// PUT update status/reply by ID 👈 (Yeh line zaroori hai)
+router.route('/:id')
+  .put(updateBooking);
 
 module.exports = router;
