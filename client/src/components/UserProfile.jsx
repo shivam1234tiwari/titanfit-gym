@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { User, Activity, CreditCard, Dumbbell, ShieldCheck, RefreshCw, Scale, Ruler, LogOut, ArrowLeft } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://titanfit-gym.onrender.com';
+
 export default function UserProfile({ onClose, onLogout }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,7 +19,7 @@ export default function UserProfile({ onClose, onLogout }) {
     if (!token) return;
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/profile', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -62,7 +64,7 @@ export default function UserProfile({ onClose, onLogout }) {
     const token = localStorage.getItem('titanfit_token');
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/profile', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
