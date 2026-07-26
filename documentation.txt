@@ -3,7 +3,7 @@ This is the official REST API documentation for the TITANFIT Gym Management Appl
 
 🚀 Base URL
 Plaintext
-http://localhost:5000/api
+localhost:5000
 📋 Endpoints Overview
 Method	Endpoint	Description	Auth Required
 GET	/	Health check endpoint	❌ No

@@ -1,7 +1,7 @@
 import React from 'react';
 
 const galleryImages = [
-  { url: 'image_agent_tag_18071575271101855759', title: 'Heavy Dumbbell & Power Rack Zone' },
+  { url: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=600', title: 'Heavy Dumbbell & Power Rack Zone' },
   { url: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&q=80&w=600', title: 'Functional Turf & Sprint Track' },
   { url: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&q=80&w=600', title: 'Olympic Weightlifting Platforms' },
   { url: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&q=80&w=600', title: 'Cardio Deck & Endurance Zone' },
