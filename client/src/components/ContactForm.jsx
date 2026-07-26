@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send, CheckCircle, AlertCircle } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://titanfit-gym.onrender.com';
+
 export default function ContactForm() {
   const [form, setForm] = useState({
     name: '',
@@ -24,7 +26,7 @@ export default function ContactForm() {
     setStatus({ loading: true, success: false, error: null, message: '' });
 
     try {
-      const res = await fetch('http://localhost:5000/api/contact', {
+      const res = await fetch(`${API_BASE_URL}/api/contact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

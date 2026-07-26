@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://titanfit-gym.onrender.com';
+
 export default function FreeTrialModal({ isOpen, onClose, selectedPlan }) {
   const [formData, setFormData] = useState({
     fullName: '',
@@ -31,7 +33,7 @@ export default function FreeTrialModal({ isOpen, onClose, selectedPlan }) {
     setStatus({ loading: true, success: false, error: null });
 
     try {
-      const res = await fetch('http://localhost:5000/api/bookings', {
+      const res = await fetch(`${API_BASE_URL}/api/bookings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

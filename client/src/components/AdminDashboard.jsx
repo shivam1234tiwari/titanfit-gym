@@ -15,6 +15,8 @@ import {
   Award
 } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://titanfit-gym.onrender.com';
+
 export default function AdminDashboard({ onClose }) {
   const [activeTab, setActiveTab] = useState('bookings');
   const [bookings, setBookings] = useState([]);
@@ -37,20 +39,20 @@ export default function AdminDashboard({ onClose }) {
     setError(null);
     try {
       if (activeTab === 'bookings') {
-        const res = await fetch('http://localhost:5000/api/bookings');
+        const res = await fetch(`${API_BASE_URL}/api/bookings`);
         const json = await res.json();
         if (json.success) setBookings(json.data);
       } else if (activeTab === 'messages') {
-        const res = await fetch('http://localhost:5000/api/contact');
+        const res = await fetch(`${API_BASE_URL}/api/contact`);
         const json = await res.json();
         if (json.success) setMessages(json.data);
       } else if (activeTab === 'members') {
-        const res = await fetch('http://localhost:5000/api/auth/members');
+        const res = await fetch(`${API_BASE_URL}/api/auth/members`);
         const json = await res.json();
         if (json.success) setMembers(json.data);
       }
     } catch (err) {
-      setError('Server se connect nahi ho paya. Backend server (port 5000) check karein.');
+      setError('Server se connect nahi ho paya. Backend service check karein.');
     } finally {
       setLoading(false);
     }
@@ -63,7 +65,7 @@ export default function AdminDashboard({ onClose }) {
   // 🔄 Handle Booking Status Change (Confirmed / Cancelled / Pending)
   const handleStatusChange = async (bookingId, newStatus) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/bookings/${bookingId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/bookings/${bookingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -88,7 +90,7 @@ export default function AdminDashboard({ onClose }) {
   // 👥 Handle Member Plan / Trainer Update
   const handleMemberUpdate = async (memberId, field, value) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/members/${memberId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/members/${memberId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value })
@@ -118,8 +120,8 @@ export default function AdminDashboard({ onClose }) {
     try {
       const endpoint =
         type === 'booking'
-          ? `http://localhost:5000/api/bookings/${item._id}`
-          : `http://localhost:5000/api/contact/${item._id}`;
+          ? `${API_BASE_URL}/api/bookings/${item._id}`
+          : `${API_BASE_URL}/api/contact/${item._id}`;
 
       const payload =
         type === 'booking'

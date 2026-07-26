@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X, Lock, Mail, User, Dumbbell, ArrowRight } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://titanfit-gym.onrender.com';
+
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
@@ -30,7 +32,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       : formData;
 
     try {
-      const res = await fetch(`http://localhost:5000${endpoint}`, {
+      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -148,7 +150,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 type="password"
                 name="password"
                 required
-                minlength="6"
+                minLength="6"
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
