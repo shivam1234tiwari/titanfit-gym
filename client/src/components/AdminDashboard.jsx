@@ -14,8 +14,7 @@ import {
   ShieldAlert,
   Award
 } from 'lucide-react';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://titanfit-gym.onrender.com';
+import { API_BASE_URL } from '../config';
 
 export default function AdminDashboard({ onClose }) {
   const [activeTab, setActiveTab] = useState('bookings');

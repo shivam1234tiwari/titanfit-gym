@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Activity, CreditCard, Dumbbell, ShieldCheck, RefreshCw, Scale, Ruler, LogOut, ArrowLeft } from 'lucide-react';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://titanfit-gym.onrender.com';
+import { API_BASE_URL } from '../config';
 
 export default function UserProfile({ onClose, onLogout }) {
   const [profile, setProfile] = useState(null);

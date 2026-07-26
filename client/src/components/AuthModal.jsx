@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, Lock, Mail, User, Dumbbell, ArrowRight } from 'lucide-react';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://titanfit-gym.onrender.com';
+import { API_BASE_URL } from '../config';
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
