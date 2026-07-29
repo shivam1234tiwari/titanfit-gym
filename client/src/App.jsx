@@ -11,7 +11,7 @@ import FreeTrialModal from './components/FreeTrialModal';
 import AdminDashboard from './components/AdminDashboard';
 import AuthModal from './components/AuthModal';
 import UserProfile from './components/UserProfile';
-import AIChatbot from './components/AIChatbot';
+// import AIChatbot from './components/AIChatbot';
 import { ShieldAlert, Lock, X } from 'lucide-react';
 
 const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com";
@@ -118,7 +118,7 @@ export default function App() {
           </button>
         </footer>
 
-        <AIChatbot />
+        {/* <AIChatbot /> */}
 
         <FreeTrialModal
           isOpen={isModalOpen}
