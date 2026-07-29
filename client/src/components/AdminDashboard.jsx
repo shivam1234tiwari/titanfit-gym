@@ -15,6 +15,7 @@ import {
   Award
 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
+import AdminAnalytics from './AdminAnalytics';
 
 export default function AdminDashboard({ onClose }) {
   const [activeTab, setActiveTab] = useState('bookings');
@@ -222,6 +223,9 @@ export default function AdminDashboard({ onClose }) {
             </div>
           </div>
         </div>
+
+        {/* 📊 Interactive Pie Chart Analytics Section */}
+        <AdminAnalytics members={members} bookings={bookings} />
 
         {/* Tab Navigation */}
         <div className="flex flex-wrap gap-3 mb-6">

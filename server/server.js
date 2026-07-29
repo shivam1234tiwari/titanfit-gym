@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const aiRoutes = require('./routes/aiRoutes');
 
 dotenv.config();
 connectDB();
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/authRoutes')); // 👈 Added Auth Routes
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
+app.use('/api/ai', aiRoutes);
 
 app.get('/', (req, res) => {
   res.send('Gym Website API with Auth Running...');
