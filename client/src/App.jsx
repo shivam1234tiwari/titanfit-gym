@@ -14,7 +14,6 @@ import UserProfile from './components/UserProfile';
 import AIChatbot from './components/AIChatbot';
 import { ShieldAlert, Lock, X } from 'lucide-react';
 
-// Google OAuth Client ID (Your Google Cloud Console Client ID)
 const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com";
 
 export default function App() {
@@ -25,7 +24,6 @@ export default function App() {
   const [selectedPlan, setSelectedPlan] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
 
-  // Admin Access Verification Modal State
   const [showAdminPassModal, setShowAdminPassModal] = useState(false);
   const [adminPassInput, setAdminPassInput] = useState('');
   const [accessDeniedMsg, setAccessDeniedMsg] = useState(null);
@@ -49,22 +47,18 @@ export default function App() {
     setIsProfileView(false);
   };
 
-  // 🔒 ADMIN ACCESS CHECK FUNCTION
   const handleAdminAccessClick = () => {
     setAccessDeniedMsg(null);
     setAdminPassInput('');
 
-    // Rule 1: Regular logged in members blocked
     if (currentUser && currentUser.role !== 'admin') {
       setAccessDeniedMsg('🚫 Access Denied: Regular members do not have admin privileges.');
       return;
     }
 
-    // Rule 2: Open Passcode Verification Modal
     setShowAdminPassModal(true);
   };
 
-  // Handle Admin Passcode Submit
   const handleAdminLoginSubmit = (e) => {
     e.preventDefault();
     if (adminPassInput === 'admin123') {
@@ -93,7 +87,6 @@ export default function App() {
           currentUser={currentUser}
         />
 
-        {/* Access Denied Alert Bar */}
         {accessDeniedMsg && (
           <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-rose-500/90 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-rose-400 text-xs sm:text-sm font-bold backdrop-blur-md">
             <ShieldAlert className="w-5 h-5 shrink-0" />
@@ -125,7 +118,6 @@ export default function App() {
           </button>
         </footer>
 
-        {/* Floating AI Fitness Chatbot */}
         <AIChatbot />
 
         <FreeTrialModal
@@ -140,7 +132,6 @@ export default function App() {
           onAuthSuccess={(user) => setCurrentUser(user)}
         />
 
-        {/* 🔐 ADMIN PASSCODE / KEY MODAL */}
         {showAdminPassModal && (
           <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl p-6 relative shadow-2xl">
