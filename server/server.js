@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const aiRoutes = require('./routes/aiRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 dotenv.config();
 connectDB();
@@ -17,6 +18,7 @@ app.use('/api/auth', require('./routes/authRoutes')); // 👈 Added Auth Routes
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/ai', aiRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.get('/', (req, res) => {
   res.send('Gym Website API with Auth Running...');

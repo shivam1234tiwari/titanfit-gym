@@ -2,39 +2,43 @@ const express = require('express');
 const router = express.Router();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Check API Key existence
-const apiKey = process.env.GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
-
 router.post('/chat', async (req, res) => {
   try {
     const { message } = req.body;
 
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({
+        success: false,
+        reply: "Server configuration error: GEMINI_API_KEY missing."
+      });
+    }
+
     if (!message) {
-      return res.status(400).json({ success: false, message: 'Message is required' });
+      return res.status(400).json({
+        success: false,
+        reply: "Please enter a message."
+      });
     }
 
-    if (!genAI) {
-      console.error('ERROR: GEMINI_API_KEY is missing in .env file!');
-      return res.status(500).json({ success: false, reply: 'Server configuration error: GEMINI_API_KEY missing.' });
-    }
+    // Initialize Generative AI SDK
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    // Standard fast model selection
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-    const prompt = `You are TITAN AI, an energetic personal fitness coach for TITANFIT Gym. 
-Give an extreme short, energetic, and practical 2-line response in plain text.
-User query: ${message}`;
-
+    const prompt = `You are TITAN AI, an expert fitness and diet coach. User asks: ${message}`;
     const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    const text = result.response.text();
 
-    return res.json({ success: true, reply: responseText });
+    return res.json({
+      success: true,
+      reply: text
+    });
+
   } catch (error) {
-    console.error('Gemini Execution Error:', error?.message || error);
+    console.error("DETAILED GEMINI ERROR:", error.message || error);
     return res.status(500).json({
       success: false,
-      reply: 'TITAN AI is currently recalibrating. Please try asking again in a second!'
+      reply: `TITAN AI Error: ${error.message || 'API request failed'}`
     });
   }
 });
