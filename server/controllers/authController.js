@@ -29,14 +29,14 @@ exports.registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user
+    // Create user (Parse weight and height as Numbers)
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
       fitnessGoal: fitnessGoal || 'Overall Fitness',
-      weightKg: weightKg || 70,
-      heightCm: heightCm || 175
+      weightKg: weightKg ? Number(weightKg) : 70,
+      heightCm: heightCm ? Number(heightCm) : 175
     });
 
     res.status(201).json({
@@ -49,7 +49,10 @@ exports.registerUser = async (req, res) => {
         email: user.email,
         role: user.role,
         activePlan: user.activePlan,
-        enrolledProgram: user.enrolledProgram
+        enrolledProgram: user.enrolledProgram,
+        weightKg: user.weightKg,
+        heightCm: user.heightCm,
+        fitnessGoal: user.fitnessGoal
       }
     });
   } catch (error) {
@@ -89,7 +92,10 @@ exports.loginUser = async (req, res) => {
         email: user.email,
         role: user.role,
         activePlan: user.activePlan,
-        enrolledProgram: user.enrolledProgram
+        enrolledProgram: user.enrolledProgram,
+        weightKg: user.weightKg,
+        heightCm: user.heightCm,
+        fitnessGoal: user.fitnessGoal
       }
     });
   } catch (error) {
@@ -108,7 +114,12 @@ exports.googleAuthCallback = (req, res) => {
         id: req.user._id,
         name: req.user.name,
         email: req.user.email,
-        role: req.user.role || 'member'
+        role: req.user.role || 'member',
+        activePlan: req.user.activePlan,
+        enrolledProgram: req.user.enrolledProgram,
+        weightKg: req.user.weightKg,
+        heightCm: req.user.heightCm,
+        fitnessGoal: req.user.fitnessGoal
       })
     );
 
@@ -149,8 +160,8 @@ exports.updateUserProfile = async (req, res) => {
     }
 
     user.name = name || user.name;
-    user.weightKg = weightKg || user.weightKg;
-    user.heightCm = heightCm || user.heightCm;
+    user.weightKg = weightKg !== undefined ? Number(weightKg) : user.weightKg;
+    user.heightCm = heightCm !== undefined ? Number(heightCm) : user.heightCm;
     user.fitnessGoal = fitnessGoal || user.fitnessGoal;
     user.activePlan = activePlan || user.activePlan;
     user.enrolledProgram = enrolledProgram || user.enrolledProgram;

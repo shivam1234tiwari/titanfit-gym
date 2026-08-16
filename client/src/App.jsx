@@ -14,7 +14,7 @@ import UserProfile from './components/UserProfile';
 import AIChatbot from './components/AIChatbot';
 import { ShieldAlert, Lock, X } from 'lucide-react';
 
-const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "884662759151-8qlh4ot9b8h9r4bmoqfn0mj8crgs7mfn.apps.googleusercontent.com";
 
 export default function App() {
   const [isAdminView, setIsAdminView] = useState(false);
@@ -45,6 +45,14 @@ export default function App() {
     localStorage.removeItem('titanfit_user');
     setCurrentUser(null);
     setIsProfileView(false);
+  };
+
+  const handlePlanUpdated = (updatedPlanName) => {
+    if (currentUser) {
+      const updated = { ...currentUser, activePlan: updatedPlanName };
+      setCurrentUser(updated);
+      localStorage.setItem('titanfit_user', JSON.stringify(updated));
+    }
   };
 
   const handleAdminAccessClick = () => {
@@ -100,7 +108,8 @@ export default function App() {
         <main className="flex-1">
           <Hero onOpenBooking={() => handleOpenBooking('Free Trial')} />
           <Programs />
-          <MembershipPlans onSelectPlan={(plan) => handleOpenBooking(plan)} />
+          {/* Membership Plans with Direct Plan Activation */}
+          <MembershipPlans onSelectPlan={handlePlanUpdated} />
           <Trainers />
           <Gallery />
           <ContactForm />
