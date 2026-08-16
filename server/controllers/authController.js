@@ -97,6 +97,30 @@ exports.loginUser = async (req, res) => {
   }
 };
 
+// @desc    Google OAuth Callback Handler
+// @route   GET /api/auth/google/callback
+exports.googleAuthCallback = (req, res) => {
+  try {
+    const token = generateToken(req.user._id);
+
+    const userData = encodeURIComponent(
+      JSON.stringify({
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role || 'member'
+      })
+    );
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}?token=${token}&user=${userData}`);
+  } catch (error) {
+    console.error('Google Auth Controller Error:', error);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}?error=OAuthFailed`);
+  }
+};
+
 // @desc    Get current user profile
 // @route   GET /api/auth/profile
 // @access  Private (Needs Bearer Token)
@@ -151,6 +175,7 @@ exports.updateUserProfile = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
   }
 };
+
 // @desc    Get all registered members (For Admin Panel)
 // @route   GET /api/auth/members
 exports.getAllMembers = async (req, res) => {
