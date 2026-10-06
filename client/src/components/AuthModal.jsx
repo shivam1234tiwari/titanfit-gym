@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Lock, Mail, User, Loader2 } from 'lucide-react';
+import { X, Lock, Mail, User, Phone, Loader2 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
@@ -7,6 +7,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phoneNumber: '',
     password: '',
     weight: '',
     height: ''
@@ -18,19 +19,37 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     if (isOpen) {
       setLoading(false);
       setErrorMsg('');
-      setFormData({ name: '', email: '', password: '', weight: '', height: '' });
+      setFormData({ name: '', email: '', phoneNumber: '', password: '', weight: '', height: '' });
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    // Restrict Phone Number to digits only and max 10 characters
+    if (name === 'phoneNumber') {
+      const numericVal = value.replace(/\D/g, '');
+      if (numericVal.length > 10) return;
+      setFormData((prev) => ({ ...prev, [name]: numericVal }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
+
+    // Frontend phone validation for Sign Up
+    if (isSignUp) {
+      const phoneRegex = /^[6-9]\d{9}$/;
+      if (!phoneRegex.test(formData.phoneNumber)) {
+        setErrorMsg('Please enter a valid 10-digit mobile number starting with 6-9');
+        return;
+      }
+    }
 
     setLoading(true);
     setErrorMsg('');
@@ -114,6 +133,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Full Name Field (Signup Only) */}
           {isSignUp && (
             <div className="relative">
               <User className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
@@ -129,6 +149,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             </div>
           )}
 
+          {/* Email Address */}
           <div className="relative">
             <Mail className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
             <input
@@ -142,6 +163,24 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             />
           </div>
 
+          {/* Phone Number Field (Signup Only) */}
+          {isSignUp && (
+            <div className="relative flex items-center">
+              <Phone className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
+              <span className="absolute left-10 text-xs text-slate-400 font-semibold">+91</span>
+              <input
+                type="tel"
+                name="phoneNumber"
+                required
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                placeholder="10-digit mobile number"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-18 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+              />
+            </div>
+          )}
+
+          {/* Password */}
           <div className="relative">
             <Lock className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
             <input
@@ -155,6 +194,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             />
           </div>
 
+          {/* Weight & Height Fields (Signup Only) */}
           {isSignUp && (
             <div className="grid grid-cols-2 gap-3">
               <input
@@ -178,6 +218,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             </div>
           )}
 
+          {/* Submit Action Button */}
           <button
             type="submit"
             disabled={loading}

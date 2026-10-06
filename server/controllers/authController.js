@@ -2,84 +2,134 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// Helper Function: JWT Token Generate
+// Helper function to generate JWT Token
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'secret123key', {
+  return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret', {
     expiresIn: '30d'
   });
 };
 
-// @desc    Register a new user
-// @route   POST /api/auth/register
+/**
+ * @desc    Register a new user with Phone Number validation
+ * @route   POST /api/auth/register
+ * @access  Public
+ */
 exports.registerUser = async (req, res) => {
   try {
-    const { name, email, password, fitnessGoal, weightKg, heightCm } = req.body;
+    const { name, email, password, phoneNumber } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide all required fields' });
+    // 1. Mandatory Fields Check
+    if (!name || !email || !password || !phoneNumber) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please fill in all fields (Name, Email, Phone Number, Password)' 
+      });
     }
 
-    // Check if user exists
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ success: false, message: 'User already exists with this email' });
+    // 2. Email Regex Validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please enter a valid email address' 
+      });
     }
 
-    // Hash password
+    // 3. Indian / Standard 10-Digit Mobile Number Validation (Starts with 6-9)
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9' 
+      });
+    }
+
+    // 4. Password Strength Check
+    if (password.length < 6) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Password must be at least 6 characters long' 
+      });
+    }
+
+    // 5. Check if User / Email / Phone Number Already Exists
+    const formattedEmail = email.toLowerCase().trim();
+    const existingUser = await User.findOne({ 
+      $or: [{ email: formattedEmail }, { phoneNumber: phoneNumber.trim() }] 
+    });
+
+    if (existingUser) {
+      const duplicateField = existingUser.email === formattedEmail ? 'Email address' : 'Phone number';
+      return res.status(400).json({ 
+        success: false, 
+        message: `${duplicateField} is already registered with another account` 
+      });
+    }
+
+    // 6. Hash Password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user (Parse weight and height as Numbers)
+    // 7. Create New User in MongoDB
     const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      fitnessGoal: fitnessGoal || 'Overall Fitness',
-      weightKg: weightKg ? Number(weightKg) : 70,
-      heightCm: heightCm ? Number(heightCm) : 175
+      name: name.trim(),
+      email: formattedEmail,
+      phoneNumber: phoneNumber.trim(),
+      password: hashedPassword
     });
 
-    res.status(201).json({
-      success: true,
-      message: 'Registration successful!',
-      token: generateToken(user._id),
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        activePlan: user.activePlan,
-        enrolledProgram: user.enrolledProgram,
-        weightKg: user.weightKg,
-        heightCm: user.heightCm,
-        fitnessGoal: user.fitnessGoal
-      }
-    });
+    // 8. Send Response with Token
+    if (user) {
+      res.status(201).json({
+        success: true,
+        message: 'Registration successful!',
+        token: generateToken(user._id),
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phoneNumber: user.phoneNumber
+        }
+      });
+    } else {
+      res.status(400).json({ success: false, message: 'Invalid user data received' });
+    }
+
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
+    console.error('Registration Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message || 'Server error during registration' 
+    });
   }
 };
 
-// @desc    Authenticate user & get token (Login)
-// @route   POST /api/auth/login
+/**
+ * @desc    Authenticate User & Login
+ * @route   POST /api/auth/login
+ * @access  Public
+ */
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide email and password' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please provide both email and password' 
+      });
     }
 
-    // Find user
-    const user = await User.findOne({ email });
+    // Find User by Email
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
-      return res.status(400).json({ success: false, message: 'Invalid email or password' });
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    // Match password
+    // Compare Hashed Password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: 'Invalid email or password' });
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
     res.status(200).json({
@@ -90,133 +140,36 @@ exports.loginUser = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
-        activePlan: user.activePlan,
-        enrolledProgram: user.enrolledProgram,
-        weightKg: user.weightKg,
-        heightCm: user.heightCm,
-        fitnessGoal: user.fitnessGoal
+        phoneNumber: user.phoneNumber
       }
     });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
+    console.error('Login Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message || 'Server error during login' 
+    });
   }
 };
 
-// @desc    Google OAuth Callback Handler
-// @route   GET /api/auth/google/callback
-exports.googleAuthCallback = (req, res) => {
-  try {
-    const token = generateToken(req.user._id);
-
-    const userData = encodeURIComponent(
-      JSON.stringify({
-        id: req.user._id,
-        name: req.user.name,
-        email: req.user.email,
-        role: req.user.role || 'member',
-        activePlan: req.user.activePlan,
-        enrolledProgram: req.user.enrolledProgram,
-        weightKg: req.user.weightKg,
-        heightCm: req.user.heightCm,
-        fitnessGoal: req.user.fitnessGoal
-      })
-    );
-
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    res.redirect(`${frontendUrl}?token=${token}&user=${userData}`);
-  } catch (error) {
-    console.error('Google Auth Controller Error:', error);
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    res.redirect(`${frontendUrl}?error=OAuthFailed`);
-  }
-};
-
-// @desc    Get current user profile
-// @route   GET /api/auth/profile
-// @access  Private (Needs Bearer Token)
+/**
+ * @desc    Get Current Logged In User Profile
+ * @route   GET /api/auth/me
+ * @access  Private (Requires Middleware Token)
+ */
 exports.getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-    res.status(200).json({ success: true, data: user });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
-  }
-};
-
-// @desc    Update user fitness stats & profile
-// @route   PUT /api/auth/profile
-// @access  Private
-exports.updateUserProfile = async (req, res) => {
-  try {
-    const { name, weightKg, heightCm, fitnessGoal, activePlan, enrolledProgram } = req.body;
-
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
-    user.name = name || user.name;
-    user.weightKg = weightKg !== undefined ? Number(weightKg) : user.weightKg;
-    user.heightCm = heightCm !== undefined ? Number(heightCm) : user.heightCm;
-    user.fitnessGoal = fitnessGoal || user.fitnessGoal;
-    user.activePlan = activePlan || user.activePlan;
-    user.enrolledProgram = enrolledProgram || user.enrolledProgram;
-
-    const updatedUser = await user.save();
 
     res.status(200).json({
       success: true,
-      message: 'Profile updated successfully!',
-      data: {
-        id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        activePlan: updatedUser.activePlan,
-        enrolledProgram: updatedUser.enrolledProgram,
-        weightKg: updatedUser.weightKg,
-        heightCm: updatedUser.heightCm,
-        fitnessGoal: updatedUser.fitnessGoal
-      }
+      user
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
-  }
-};
-
-// @desc    Get all registered members (For Admin Panel)
-// @route   GET /api/auth/members
-exports.getAllMembers = async (req, res) => {
-  try {
-    const members = await User.find({ role: 'member' }).select('-password').sort({ createdAt: -1 });
-    res.status(200).json({ success: true, count: members.length, data: members });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
-  }
-};
-
-// @desc    Admin Updates Member Plan / Trainer
-// @route   PUT /api/auth/members/:id
-exports.updateMemberByAdmin = async (req, res) => {
-  try {
-    const { activePlan, assignedTrainer, enrolledProgram } = req.body;
-
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Member nahi mila.' });
-    }
-
-    if (activePlan) user.activePlan = activePlan;
-    if (assignedTrainer) user.assignedTrainer = assignedTrainer;
-    if (enrolledProgram) user.enrolledProgram = enrolledProgram;
-
-    await user.save();
-
-    res.status(200).json({ success: true, message: 'Member plan & trainer updated!', data: user });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
+    res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
