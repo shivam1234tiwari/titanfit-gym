@@ -4,18 +4,19 @@ const dotenv = require('dotenv');
 const session = require('express-session');
 const passport = require('passport');
 
-// 1. Env config load sabse upar hona chahiye
+// 1. Load Environment Configuration
 dotenv.config();
 
-// 2. MongoDB connect
+// 2. Connect to MongoDB Atlas
 const connectDB = require('./config/db');
 connectDB();
 
-// 3. Google Passport strategy configuration load karein
+// 3. Load Passport Configuration
 require('./config/passport');
 
 const app = express();
 
+// CORS Policy
 app.use(cors({
   origin: [
     'http://localhost:5173',
@@ -38,16 +39,19 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Routes
-app.use('/api/auth', require('./routes/authRoutes'));
+// Route Handlers
+const authRoutes = require('./routes/authRoutes');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', authRoutes); // Mounts /api/admin/users and /api/admin/members
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 
 app.get('/', (req, res) => {
-  res.send('Gym Website API with Auth Running...');
+  res.send('TitanFit Gym API Running Successfully');
 });
 
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

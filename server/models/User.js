@@ -3,12 +3,15 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
   name: { 
     type: String, 
-    required: [true, 'Name is required'] 
+    required: [true, 'Name is required'],
+    trim: true
   },
   email: { 
     type: String, 
     required: [true, 'Email is required'], 
-    unique: true 
+    unique: true,
+    lowercase: true,
+    trim: true
   },
   password: { 
     type: String, 
@@ -18,7 +21,20 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Phone number is required'],
     trim: true,
-    match: [/^\+?[1-9]\d{1,14}$/, 'Please provide a valid E.164 phone number'] // Example: +1234567890 or 10-digit number format
+    match: [/^[6-9]\d{9}$/, 'Please provide a valid 10-digit mobile number']
+  },
+  role: {
+    type: String,
+    enum: ['member', 'admin'],
+    default: 'member'
+  },
+  weight: {
+    type: String,
+    default: ''
+  },
+  height: {
+    type: String,
+    default: ''
   }
 }, { timestamps: true });
 
