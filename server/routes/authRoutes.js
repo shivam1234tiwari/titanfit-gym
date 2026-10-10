@@ -14,7 +14,7 @@ const {
 } = require('../controllers/authController');
 
 const { protect, isAdmin } = require('../middleware/authMiddleware');
-const upload = require('../middleware/uploadMiddleware'); // <--- Required for avatar upload
+const upload = require('../middleware/uploadMiddleware');
 
 // Standard Authentication Routes
 router.post('/register', registerUser);
@@ -38,7 +38,7 @@ router.get(
   googleAuthCallback
 );
 
-// Admin Routes (Supports /api/admin/users, /api/auth/members, /api/auth/users)
+// Admin Routes
 router.get('/users', protect, isAdmin, getAllMembers);
 router.get('/members', protect, isAdmin, getAllMembers);
 router.get('/admin/users', protect, isAdmin, getAllMembers);

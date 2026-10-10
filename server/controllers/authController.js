@@ -3,8 +3,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // Helper function to generate JWT Token
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret', {
+const generateToken = (id, role = 'member') => {
+  return jwt.sign({ id, role }, process.env.JWT_SECRET || 'titanfit_secret_key', {
     expiresIn: '30d'
   });
 };
@@ -78,14 +78,15 @@ exports.registerUser = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Registration successful!',
-      token: generateToken(user._id),
+      token: generateToken(user._id, user.role),
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         phoneNumber: user.phoneNumber,
         weight: user.weight,
-        height: user.height
+        height: user.height,
+        role: user.role || 'member'
       }
     });
 
@@ -99,7 +100,7 @@ exports.registerUser = async (req, res) => {
  * @desc    Authenticate User & Login
  * @route   POST /api/auth/login
  */
-const loginUser = async (req, res) => {
+exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -115,21 +116,17 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET || 'titanfit_secret_key',
-      { expiresIn: '30d' }
-    );
+    // Generate JWT token with user role
+    const token = generateToken(user._id, user.role || 'member');
 
-    // Ensure role is explicitly passed in user object!
+    // Return complete user payload including role
     res.status(200).json({
       token,
       user: {
         _id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role || 'member', // <--- REQUIRED FOR ADMIN ACCESS
+        role: user.role || 'member',
         phoneNumber: user.phoneNumber,
         weight: user.weight,
         height: user.height,
@@ -252,10 +249,8 @@ exports.uploadProfilePic = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please upload an image file' });
     }
 
-    // Construct image URL (e.g. /uploads/profilePic-1728551234567.jpg)
     const imagePath = `/uploads/${req.file.filename}`;
 
-    // Update user profile record in database
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -274,15 +269,13 @@ exports.uploadProfilePic = async (req, res) => {
   }
 };
 
-
 /**
  * @desc    Google OAuth Callback Handler
  * @route   GET /api/auth/google/callback
  */
 exports.googleAuthCallback = async (req, res) => {
   try {
-    const token = generateToken(req.user._id);
-    // Redirect to frontend dashboard with token
+    const token = generateToken(req.user._id, req.user.role);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     res.redirect(`${frontendUrl}?token=${token}`);
   } catch (error) {
