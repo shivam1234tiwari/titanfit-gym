@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, User, Users, Activity, ShieldCheck, Search, Phone, Mail, Loader2, RefreshCw } from 'lucide-react';
+import { LogOut, User, Users, Activity, ShieldCheck, Search, Phone, Mail, Loader2, RefreshCw, ArrowLeft } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
-export default function AdminDashboard({ adminUser, onLogout }) {
+export default function AdminDashboard({ adminUser, onLogout, onClose }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
 
-  // Fetch registered users/members list on load
   useEffect(() => {
     fetchMembers();
   }, []);
@@ -16,9 +15,18 @@ export default function AdminDashboard({ adminUser, onLogout }) {
   const fetchMembers = async () => {
     setLoading(true);
     setError('');
+
     try {
       const token = localStorage.getItem('titanfit_token');
+
+      if (!token || token === 'null' || token === 'undefined') {
+        setError('Authorization token missing. Please log in as an Admin.');
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -26,31 +34,25 @@ export default function AdminDashboard({ adminUser, onLogout }) {
       });
 
       const data = await res.json();
+
       if (res.ok) {
         setMembers(data.users || data || []);
       } else {
-        setError(data.message || 'Failed to fetch member records.');
+        setError(data.message || `Error ${res.status}: Failed to fetch member directory.`);
       }
     } catch (err) {
-      setError('Server connection error. Please try again.');
+      setError('Unable to connect to the server. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Logout Handler
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
     localStorage.removeItem('titanfit_token');
     localStorage.removeItem('titanfit_user');
-
-    if (onLogout) {
-      onLogout();
-    } else {
-      window.location.href = '/';
-    }
+    if (onLogout) onLogout();
   };
 
-  // Search filter logic
   const filteredMembers = members.filter((m) =>
     m.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     m.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -60,15 +62,24 @@ export default function AdminDashboard({ adminUser, onLogout }) {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       
-      {/* Top Header / Navigation */}
+      {/* Admin Header */}
       <header className="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-xl">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex items-center gap-2 bg-slate-950 border border-slate-800 hover:border-amber-500/50 text-slate-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95"
+            title="Return to main website"
+          >
+            <ArrowLeft className="w-4 h-4 text-amber-500" />
+            <span className="hidden sm:inline">Back to Site</span>
+          </button>
+
           <h1 className="text-xl font-black tracking-wider text-amber-500 uppercase">
-            TITANFIT <span className="text-xs text-slate-400 font-medium tracking-normal">| Admin Portal</span>
+            TITANFIT <span className="text-xs text-slate-400 font-medium tracking-normal hidden md:inline">| Admin Portal</span>
           </h1>
         </div>
 
-        {/* Right Action Bar */}
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex items-center gap-2 text-xs text-slate-300 bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-800">
             <User className="w-4 h-4 text-amber-500" />
@@ -77,8 +88,8 @@ export default function AdminDashboard({ adminUser, onLogout }) {
 
           <button
             type="button"
-            onClick={handleLogout}
-            className="flex items-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-lg shadow-rose-500/5 active:scale-95"
+            onClick={handleLogoutClick}
+            className="flex items-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-lg active:scale-95"
           >
             <LogOut className="w-4 h-4" />
             <span>Logout</span>
@@ -89,7 +100,7 @@ export default function AdminDashboard({ adminUser, onLogout }) {
       {/* Main Container */}
       <main className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
         
-        {/* Metric Cards Overview */}
+        {/* Metric Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-lg">
             <div>
@@ -103,8 +114,10 @@ export default function AdminDashboard({ adminUser, onLogout }) {
 
           <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-lg">
             <div>
-              <p className="text-xs text-slate-400 font-medium">Active Trackers</p>
-              <p className="text-2xl font-black text-emerald-400 mt-1">{members.filter(m => m.weight || m.height).length}</p>
+              <p className="text-xs text-slate-400 font-medium">Active Goal Trackers</p>
+              <p className="text-2xl font-black text-emerald-400 mt-1">
+                {members.filter(m => m.weight || m.height).length}
+              </p>
             </div>
             <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
               <Activity className="w-6 h-6" />
@@ -122,7 +135,7 @@ export default function AdminDashboard({ adminUser, onLogout }) {
           </div>
         </div>
 
-        {/* Member Search & Refresh Header */}
+        {/* Directory Table */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -131,7 +144,6 @@ export default function AdminDashboard({ adminUser, onLogout }) {
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Search Bar */}
               <div className="relative flex-1 sm:w-64">
                 <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
                 <input
@@ -143,7 +155,6 @@ export default function AdminDashboard({ adminUser, onLogout }) {
                 />
               </div>
 
-              {/* Refresh Button */}
               <button
                 type="button"
                 onClick={fetchMembers}
@@ -161,7 +172,6 @@ export default function AdminDashboard({ adminUser, onLogout }) {
             </div>
           )}
 
-          {/* Members Table */}
           <div className="overflow-x-auto rounded-xl border border-slate-800">
             <table className="w-full text-left text-xs text-slate-300">
               <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">

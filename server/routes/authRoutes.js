@@ -1,4 +1,5 @@
 const express = require('express');
+const passport = require('passport');
 const router = express.Router();
 
 const {
@@ -7,21 +8,42 @@ const {
   getUserProfile,
   updateUserProfile,
   getAllMembers,
-  updateMemberByAdmin
+  updateMemberByAdmin,
+  googleAuthCallback,
+  uploadProfilePic
 } = require('../controllers/authController');
 
-// Import authentication & authorization middleware
 const { protect, isAdmin } = require('../middleware/authMiddleware');
+const upload = require('../middleware/uploadMiddleware'); // <--- Required for avatar upload
 
-// Standard Auth Routes
+// Standard Authentication Routes
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.get('/profile', protect, getUserProfile);
 router.put('/profile', protect, updateUserProfile);
 
-// Protected Admin-Only Routes
+// Multer Image Upload Route
+router.post(
+  '/upload-avatar', 
+  protect, 
+  upload.single('profilePic'), 
+  uploadProfilePic
+);
+
+// Google OAuth Routes
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: '/login' }),
+  googleAuthCallback
+);
+
+// Admin Routes (Supports /api/admin/users, /api/auth/members, /api/auth/users)
+router.get('/users', protect, isAdmin, getAllMembers);
 router.get('/members', protect, isAdmin, getAllMembers);
 router.get('/admin/users', protect, isAdmin, getAllMembers);
+
+router.put('/users/:id', protect, isAdmin, updateMemberByAdmin);
 router.put('/members/:id', protect, isAdmin, updateMemberByAdmin);
 router.put('/admin/users/:id', protect, isAdmin, updateMemberByAdmin);
 

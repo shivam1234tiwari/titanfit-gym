@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Dumbbell, Menu, X, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { Dumbbell, Menu, X, User, LogOut, ShieldCheck, LogIn } from 'lucide-react';
 
-export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, currentUser }) {
+export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, currentUser, onLogout, onOpenAdmin }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const navLinks = [
@@ -10,6 +10,15 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
     { name: 'Trainers', href: '#trainers' },
     { name: 'Contact', href: '#contact' },
   ];
+
+  const handleLogoutClick = () => {
+    localStorage.removeItem('titanfit_token');
+    localStorage.removeItem('titanfit_user');
+    
+    if (onLogout) {
+      onLogout();
+    }
+  };
 
   return (
     <nav className="fixed top-0 left-0 w-full bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 z-40">
@@ -22,7 +31,7 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
         </a>
 
         {/* Desktop Links */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-6">
           {navLinks.map((link) => (
             <a
               key={link.name}
@@ -33,27 +42,64 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
             </a>
           ))}
 
-          {/* User Auth or Profile Button */}
+          {/* User Actions */}
           {currentUser ? (
-            <button
-              onClick={onOpenProfile}
-              className="inline-flex items-center gap-2 bg-slate-900 border border-slate-700 hover:border-amber-500 text-amber-400 font-bold px-4 py-2 rounded-xl text-sm transition-all cursor-pointer"
-            >
-              <User className="w-4 h-4" />
-              <span>{currentUser.name.split(' ')[0]}</span>
-            </button>
+            <div className="flex items-center gap-3">
+              {/* Admin Portal Button (Admin Only) */}
+              {currentUser.role === 'admin' && (
+                <button
+                  type="button"
+                  onClick={onOpenAdmin}
+                  className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 font-bold px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Admin</span>
+                </button>
+              )}
+
+              {/* User Profile Button */}
+              <button
+                type="button"
+                onClick={onOpenProfile}
+                className="inline-flex items-center gap-2 bg-slate-900 border border-slate-800 hover:border-amber-500 text-slate-200 font-bold px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer"
+              >
+                {currentUser.profilePic ? (
+                  <img
+                    src={currentUser.profilePic}
+                    alt="Avatar"
+                    className="w-5 h-5 rounded-full object-cover border border-amber-500/50"
+                  />
+                ) : (
+                  <User className="w-4 h-4 text-amber-500" />
+                )}
+                <span>{currentUser.name ? currentUser.name.split(' ')[0] : 'Profile'}</span>
+              </button>
+
+              {/* Logout Button */}
+              <button
+                type="button"
+                onClick={handleLogoutClick}
+                className="p-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 rounded-xl transition-all cursor-pointer"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           ) : (
             <button
+              type="button"
               onClick={onOpenAuth}
-              className="text-slate-300 hover:text-white text-sm font-bold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-slate-300 hover:text-amber-500 text-sm font-bold transition-colors cursor-pointer"
             >
-              Log In
+              <LogIn className="w-4 h-4" />
+              <span>Log In</span>
             </button>
           )}
 
           <button
+            type="button"
             onClick={onOpenBooking}
-            className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-md shadow-amber-500/20 cursor-pointer"
+            className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md shadow-amber-500/20 cursor-pointer"
           >
             Free Trial Pass
           </button>
@@ -61,6 +107,7 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
 
         {/* Mobile Toggle */}
         <button
+          type="button"
           onClick={() => setIsOpen(!isOpen)}
           className="md:hidden text-slate-300 hover:text-white focus:outline-none"
         >
@@ -83,27 +130,65 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
           ))}
 
           {currentUser ? (
-            <button
-              onClick={() => { setIsOpen(false); onOpenProfile(); }}
-              className="w-full text-left font-bold text-amber-400 py-2"
-            >
-              My Profile ({currentUser.name})
-            </button>
+            <div className="space-y-2 pt-2 border-t border-slate-800">
+              {currentUser.role === 'admin' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    if (onOpenAdmin) onOpenAdmin();
+                  }}
+                  className="w-full text-left flex items-center gap-2 font-bold text-amber-400 py-2 text-sm"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Admin Dashboard</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  if (onOpenProfile) onOpenProfile();
+                }}
+                className="w-full text-left flex items-center gap-2 font-bold text-slate-200 py-2 text-sm"
+              >
+                <User className="w-4 h-4 text-amber-500" />
+                <span>My Profile ({currentUser.name})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  handleLogoutClick();
+                }}
+                className="w-full text-left flex items-center gap-2 font-bold text-rose-400 py-2 text-sm"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Log Out</span>
+              </button>
+            </div>
           ) : (
             <button
-              onClick={() => { setIsOpen(false); onOpenAuth(); }}
-              className="w-full text-left font-bold text-slate-300 py-2"
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                onOpenAuth();
+              }}
+              className="w-full text-left font-bold text-slate-300 py-2 text-sm"
             >
               Log In / Sign Up
             </button>
           )}
 
           <button
+            type="button"
             onClick={() => {
               setIsOpen(false);
               onOpenBooking();
             }}
-            className="w-full bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold py-3 rounded-xl text-sm"
+            className="w-full bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold py-3 rounded-xl text-xs"
           >
             Free Trial Pass
           </button>

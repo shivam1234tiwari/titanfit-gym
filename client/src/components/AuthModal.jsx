@@ -1,25 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { X, Lock, Mail, User, Phone, Loader2 } from 'lucide-react';
-import { API_BASE_URL } from '../config';
+import React, { useState, useEffect } from "react";
+import { X, Lock, Mail, User, Phone, Loader2 } from "lucide-react";
+import { API_BASE_URL } from "../config";
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phoneNumber: '',
-    password: '',
-    weight: '',
-    height: ''
+    name: "",
+    email: "",
+    phoneNumber: "",
+    password: "",
+    weight: "",
+    height: "",
   });
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       setLoading(false);
-      setErrorMsg('');
-      setFormData({ name: '', email: '', phoneNumber: '', password: '', weight: '', height: '' });
+      setErrorMsg("");
+      setFormData({
+        name: "",
+        email: "",
+        phoneNumber: "",
+        password: "",
+        weight: "",
+        height: "",
+      });
     }
   }, [isOpen]);
 
@@ -28,9 +35,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Restrict Phone Number to digits only and max 10 characters
-    if (name === 'phoneNumber') {
-      const numericVal = value.replace(/\D/g, '');
+    // Filter Phone Number input to allow ONLY digits up to 10 characters
+    if (name === "phoneNumber") {
+      const numericVal = value.replace(/\D/g, "");
       if (numericVal.length > 10) return;
       setFormData((prev) => ({ ...prev, [name]: numericVal }));
     } else {
@@ -42,45 +49,52 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     e.preventDefault();
     if (loading) return;
 
-    // Frontend phone validation for Sign Up
+    // Password validation (6 - 16 characters)
+    if (formData.password.length < 6 || formData.password.length > 16) {
+      setErrorMsg("Password must be between 6 and 16 characters");
+      return;
+    }
+
+    // Phone validation on sign up
     if (isSignUp) {
       const phoneRegex = /^[6-9]\d{9}$/;
       if (!phoneRegex.test(formData.phoneNumber)) {
-        setErrorMsg('Please enter a valid 10-digit mobile number starting with 6-9');
+        setErrorMsg(
+          "Please enter a valid 10-digit mobile number starting with 6-9",
+        );
         return;
       }
     }
 
     setLoading(true);
-    setErrorMsg('');
+    setErrorMsg("");
 
-    const endpoint = isSignUp ? '/api/auth/register' : '/api/auth/login';
+    const endpoint = isSignUp ? "/api/auth/register" : "/api/auth/login";
 
     try {
       const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
 
       const data = await res.json();
 
       if (res.ok && data.token) {
-        localStorage.setItem('titanfit_token', data.token);
-        localStorage.setItem('titanfit_user', JSON.stringify(data.user));
+        localStorage.setItem("titanfit_token", data.token);
+        localStorage.setItem("titanfit_user", JSON.stringify(data.user));
         if (onAuthSuccess) onAuthSuccess(data.user);
         onClose();
       } else {
-        setErrorMsg(data.message || 'Authentication failed. Please try again.');
+        setErrorMsg(data.message || "Authentication failed. Please try again.");
       }
     } catch (err) {
-      setErrorMsg('Unable to connect to server. Please try again.');
+      setErrorMsg("Unable to connect to server. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Google OAuth Redirect Handler
   const handleGoogleLogin = () => {
     window.location.href = `${API_BASE_URL}/api/auth/google`;
   };
@@ -88,7 +102,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 relative shadow-2xl text-slate-100">
-        
         <button
           type="button"
           onClick={onClose}
@@ -98,9 +111,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         </button>
 
         <div className="text-center mb-6">
-          <h2 className="text-xl font-bold tracking-wider text-amber-500 uppercase">TITANFIT</h2>
+          <h2 className="text-xl font-bold tracking-wider text-amber-500 uppercase">
+            TITANFIT
+          </h2>
           <p className="text-xs text-slate-400 mt-1">
-            {isSignUp ? 'Create your member account to start tracking progress.' : 'Welcome back! Log in to your portal.'}
+            {isSignUp
+              ? "Create your member account to start tracking progress."
+              : "Welcome back! Log in to your portal."}
           </p>
         </div>
 
@@ -108,18 +125,28 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         <div className="flex bg-slate-950 p-1 rounded-xl mb-6 border border-slate-800">
           <button
             type="button"
-            onClick={() => { setIsSignUp(false); setErrorMsg(''); }}
+            onClick={() => {
+              setIsSignUp(false);
+              setErrorMsg("");
+            }}
             className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              !isSignUp ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
+              !isSignUp
+                ? "bg-amber-500 text-slate-950 shadow-md"
+                : "text-slate-400 hover:text-white"
             }`}
           >
             Log In
           </button>
           <button
             type="button"
-            onClick={() => { setIsSignUp(true); setErrorMsg(''); }}
+            onClick={() => {
+              setIsSignUp(true);
+              setErrorMsg("");
+            }}
             className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              isSignUp ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
+              isSignUp
+                ? "bg-amber-500 text-slate-950 shadow-md"
+                : "text-slate-400 hover:text-white"
             }`}
           >
             Sign Up
@@ -167,7 +194,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           {isSignUp && (
             <div className="relative flex items-center">
               <Phone className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
-              <span className="absolute left-10 text-xs text-slate-400 font-semibold">+91</span>
+              <span className="absolute left-10 text-xs text-slate-400 font-semibold">
+                +91
+              </span>
               <input
                 type="tel"
                 name="phoneNumber"
@@ -180,16 +209,18 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             </div>
           )}
 
-          {/* Password */}
+          {/* Password Input Field */}
           <div className="relative">
             <Lock className="w-4 h-4 absolute left-3.5 top-3 text-slate-500" />
             <input
               type="password"
               name="password"
               required
+              minLength={6}
+              maxLength={16}
               value={formData.password}
               onChange={handleChange}
-              placeholder="Password"
+              placeholder="Password (6-16 characters)"
               className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
             />
           </div>
@@ -200,7 +231,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               <input
                 type="number"
                 name="weight"
-                required
                 value={formData.weight}
                 onChange={handleChange}
                 placeholder="Weight (kg)"
@@ -209,7 +239,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               <input
                 type="number"
                 name="height"
-                required
                 value={formData.height}
                 onChange={handleChange}
                 placeholder="Height (cm)"
@@ -218,7 +247,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             </div>
           )}
 
-          {/* Submit Action Button */}
           <button
             type="submit"
             disabled={loading}
@@ -230,7 +258,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 <span>Processing...</span>
               </>
             ) : (
-              <span>{isSignUp ? 'Create Account' : 'Log In'}</span>
+              <span>{isSignUp ? "Create Account" : "Log In"}</span>
             )}
           </button>
         </form>
@@ -238,10 +266,12 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         {/* Divider */}
         <div className="relative my-5 flex items-center justify-center">
           <div className="border-t border-slate-800 w-full" />
-          <span className="bg-slate-900 px-3 text-[10px] text-slate-500 uppercase font-bold absolute">OR</span>
+          <span className="bg-slate-900 px-3 text-[10px] text-slate-500 uppercase font-bold absolute">
+            OR
+          </span>
         </div>
 
-        {/* Continue with Google Button */}
+        {/* Google OAuth Button */}
         <button
           type="button"
           onClick={handleGoogleLogin}
@@ -267,7 +297,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </svg>
           <span>Continue with Google</span>
         </button>
-
       </div>
     </div>
   );

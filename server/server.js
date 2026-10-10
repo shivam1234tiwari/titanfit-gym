@@ -3,6 +3,8 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const session = require('express-session');
 const passport = require('passport');
+const path = require('path'); // Required for static uploads directory
+const fs = require('fs');
 
 // 1. Load Environment Configuration
 dotenv.config();
@@ -16,6 +18,12 @@ require('./config/passport');
 
 const app = express();
 
+// Ensure 'uploads' directory exists for profile photo storage
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 // CORS Policy
 app.use(cors({
   origin: [
@@ -26,6 +34,9 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Serve uploaded profile pictures statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 4. Session & Passport Middleware
 app.use(
@@ -43,7 +54,7 @@ app.use(passport.session());
 const authRoutes = require('./routes/authRoutes');
 
 app.use('/api/auth', authRoutes);
-app.use('/api/admin', authRoutes); // Mounts /api/admin/users and /api/admin/members
+app.use('/api/admin', authRoutes); // Aliased admin routes (/api/admin/users)
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
@@ -53,5 +64,5 @@ app.get('/', (req, res) => {
   res.send('TitanFit Gym API Running Successfully');
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
