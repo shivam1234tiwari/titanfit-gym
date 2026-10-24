@@ -96,7 +96,7 @@ export default function ContactForm() {
                 </div>
                 <div>
                   <h5 className="text-sm font-semibold text-slate-200">Phone Support</h5>
-                  <p className="text-sm text-slate-400">+1 (555) 234-5678 / +1 (555) 876-5432</p>
+                  <p className="text-sm text-slate-400">+91 800 234-5678 / +91 555 876-5432</p>
                 </div>
               </div>
 
