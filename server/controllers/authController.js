@@ -211,8 +211,12 @@ exports.updateUserProfile = async (req, res) => {
     user.height = req.body.height || user.height;
     user.goal = req.body.goal || user.goal;
     user.profilePic = req.body.profilePic !== undefined ? req.body.profilePic : user.profilePic;
-
     if (req.body.phoneNumber) user.phoneNumber = req.body.phoneNumber;
+
+    // Membership Plan update
+    if (req.body.membershipPlan) {
+      user.membershipPlan = req.body.membershipPlan;
+    }
 
     const updatedUser = await user.save();
     const dietPlan = generateDietPlan(updatedUser.goal);
@@ -222,6 +226,7 @@ exports.updateUserProfile = async (req, res) => {
       message: 'Profile updated successfully!',
       user: {
         id: updatedUser._id,
+        _id: updatedUser._id,
         name: updatedUser.name,
         email: updatedUser.email,
         phoneNumber: updatedUser.phoneNumber,
@@ -229,7 +234,8 @@ exports.updateUserProfile = async (req, res) => {
         height: updatedUser.height,
         goal: updatedUser.goal,
         profilePic: updatedUser.profilePic,
-        role: updatedUser.role
+        role: updatedUser.role,
+        membershipPlan: updatedUser.membershipPlan
       },
       dietPlan
     });
@@ -237,7 +243,6 @@ exports.updateUserProfile = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 /**
  * @desc    Upload User Profile Picture
  * @route   POST /api/auth/upload-avatar

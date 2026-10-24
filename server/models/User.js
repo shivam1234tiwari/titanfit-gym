@@ -18,7 +18,8 @@ const userSchema = new mongoose.Schema({
     type: String, 
     enum: ['Weight Loss', 'Muscle Gain', 'Maintenance'], 
     default: 'Maintenance' 
-  }
+  },
+  membershipPlan: { type: String, default: 'Free Trial' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

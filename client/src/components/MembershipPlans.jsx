@@ -82,7 +82,21 @@ export default function MembershipPlans({ onSelectPlan }) {
 
       if (data.success) {
         setIsSuccess(true);
-        if (onSelectPlan) onSelectPlan(selectedPlan.name);
+
+        // Update local storage so UserProfile immediately reflects the new plan
+        const existingUser = JSON.parse(localStorage.getItem('titanfit_user') || '{}');
+        const updatedUser = {
+          ...existingUser,
+          ...(data.user || {}),
+          activePlan: selectedPlan.name,
+          membershipPlan: selectedPlan.name,
+        };
+        localStorage.setItem('titanfit_user', JSON.stringify(updatedUser));
+
+        // Call parent state updater if available
+        if (onSelectPlan) {
+          onSelectPlan(selectedPlan.name);
+        }
 
         setTimeout(() => {
           setSelectedPlan(null);
@@ -102,7 +116,6 @@ export default function MembershipPlans({ onSelectPlan }) {
   return (
     <section id="membership" className="py-20 bg-slate-950 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-16">
           <h2 className="text-amber-500 text-sm font-bold tracking-widest uppercase mb-2">
@@ -163,16 +176,12 @@ export default function MembershipPlans({ onSelectPlan }) {
             </div>
           ))}
         </div>
-
       </div>
 
-      {/* ========================================================
-          CONFIRMATION & ACTIVATION MODAL (NO PAYMENT STEP)
-         ======================================================== */}
+      {/* CONFIRMATION & ACTIVATION MODAL */}
       {selectedPlan && (
         <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 relative shadow-2xl text-slate-100 animate-in fade-in zoom-in-95 duration-150">
-            
             <button
               type="button"
               onClick={() => setSelectedPlan(null)}
@@ -237,7 +246,6 @@ export default function MembershipPlans({ onSelectPlan }) {
                 </button>
               </div>
             )}
-
           </div>
         </div>
       )}
