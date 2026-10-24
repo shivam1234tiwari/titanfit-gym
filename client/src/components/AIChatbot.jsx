@@ -1,219 +1,234 @@
-import React, { useState, useRef, useEffect } from 'react';
+
+import React, { useEffect, useRef, useState } from "react";
 import {
   Bot,
-  X,
   Send,
+  X,
+  Trash2,
+  LoaderCircle,
   User,
   Sparkles,
-  Loader2,
-  Trash2,
-  Dumbbell,
-  Utensils,
-  Target,
-  RotateCcw,
-} from 'lucide-react';
-import { API_BASE_URL } from '../config';
+  MessageCircle,
+  RefreshCw,
+} from "lucide-react";
+
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL ||
+  "https://titanfit-gym.onrender.com"
+).replace(/\/$/, "");
 
 const INITIAL_MESSAGE = {
-  sender: 'bot',
-  text: "Hey! I'm TITAN AI 💪 Your personal fitness assistant. Ask me about workouts, nutrition, muscle gain, fat loss, or recovery!",
-  time: new Date().toISOString(),
+  sender: "bot",
+  text: "Hey! 👋 I'm your TitanFit AI fitness assistant. Ask me about workouts, nutrition, recovery, or your fitness goals.",
+  timestamp: new Date().toISOString(),
 };
 
 const SUGGESTIONS = [
-  { label: 'Build muscle', icon: Dumbbell },
-  { label: 'Healthy diet', icon: Utensils },
-  { label: 'Fat loss plan', icon: Target },
+  "Create a workout plan",
+  "Suggest a healthy diet",
+  "How can I build muscle?",
+  "Tips for weight loss",
 ];
 
 export default function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([INITIAL_MESSAGE]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const abortRef = useRef(null);
 
   useEffect(() => {
-    if (isOpen) {
-      messagesEndRef.current?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'end',
-      });
-    }
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
   }, [messages, loading, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
-      const timer = setTimeout(() => inputRef.current?.focus(), 150);
-      return () => clearTimeout(timer);
+      inputRef.current?.focus();
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    return () => abortRef.current?.abort();
-  }, []);
+  const getToken = () => {
+    // Match the key used by your TitanFit login flow.
+    return localStorage.getItem("titanfit_token");
+  };
 
-  const addMessage = (sender, text) => ({
-    sender,
-    text,
-    time: new Date().toISOString(),
-  });
+  const sendMessage = async (messageText, previousMessages = messages) => {
+    const text = messageText.trim();
 
-  const handleSendMessage = async (e, suggestedText) => {
-    e?.preventDefault();
+    if (!text || loading) return;
 
-    const userMessage = (suggestedText ?? input).trim();
+    const token = getToken();
 
-    if (!userMessage || loading) return;
+    if (!token) {
+      setError("Your login session is missing. Please log in again.");
+      return;
+    }
 
-    setInput('');
-    setError('');
+    setError("");
+    setInput("");
 
-    const userEntry = addMessage('user', userMessage);
+    const userMessage = {
+      sender: "user",
+      text,
+      timestamp: new Date().toISOString(),
+    };
 
-    // Capture recent history before adding the current message.
-    const history = [...messages, userEntry]
-      .filter((msg) => msg.sender === 'user' || msg.sender === 'bot')
-      .slice(-13)
-      .map((msg) => ({
-        role: msg.sender === 'user' ? 'user' : 'assistant',
-        content: msg.text,
+    // Only send earlier conversation messages as history.
+    const history = previousMessages
+      .filter((message) => message.text && message.text.trim())
+      .map((message) => ({
+        role: message.sender === "user" ? "user" : "assistant",
+        content: message.text,
       }));
 
-    setMessages((prev) => [...prev, userEntry]);
-    setLoading(true);
+    // Remove the initial greeting from the AI conversation history.
+    const chatHistory = history.filter(
+      (message, index) =>
+        !(index === 0 && message.role === "assistant")
+    );
 
-    const controller = new AbortController();
-    abortRef.current = controller;
+    setMessages((current) => [...current, userMessage]);
+    setLoading(true);
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        // The backend should use history if it supports conversations.
         body: JSON.stringify({
-          message: userMessage,
-          history,
+          message: text,
+          history: chatHistory,
         }),
-        signal: controller.signal,
       });
 
-      const data = await response.json().catch(() => ({}));
+      let data;
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error("The server returned an invalid response.");
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(
+          data.message ||
+            "Your session is invalid or expired. Please log in again."
+        );
+      }
 
       if (!response.ok) {
         throw new Error(
           data.message ||
             data.error ||
-            `Server error (${response.status}). Please try again.`
+            `AI request failed (${response.status}).`
         );
       }
 
-      const reply =
-        typeof data.reply === 'string' && data.reply.trim()
-          ? data.reply.trim()
-          : typeof data.message === 'string' && data.message.trim()
-            ? data.message.trim()
-            : '';
+      const reply = data.reply || data.message;
 
-      if (!reply) {
-        throw new Error(
-          'TITAN AI returned an empty response. Please try again.'
-        );
+      if (!data.success || typeof reply !== "string" || !reply.trim()) {
+        throw new Error("The AI returned an empty response. Please retry.");
       }
 
-      setMessages((prev) => [...prev, addMessage('bot', reply)]);
+      setMessages((current) => [
+        ...current,
+        {
+          sender: "bot",
+          text: reply.trim(),
+          timestamp: new Date().toISOString(),
+        },
+      ]);
     } catch (err) {
-      if (err.name === 'AbortError') return;
+      console.error("TitanFit AI chatbot error:", err);
 
       setError(
         err.message ||
-          'Unable to reach TITAN AI. Please check your connection and try again.'
+          "Unable to connect to the AI assistant. Please try again."
       );
     } finally {
-      if (abortRef.current === controller) {
-        abortRef.current = null;
-      }
       setLoading(false);
     }
   };
 
-  const clearChat = () => {
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    sendMessage(input);
+  };
+
+  const handleClearChat = () => {
     if (loading) return;
 
     setMessages([
       {
         ...INITIAL_MESSAGE,
-        time: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
       },
     ]);
-    setError('');
-    setInput('');
-    inputRef.current?.focus();
+    setError("");
+    setInput("");
   };
 
-  const formatTime = (time) => {
-    try {
-      return new Date(time).toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return '';
-    }
+  const handleRetry = () => {
+    if (loading || messages.length < 2) return;
+
+    const lastUserIndex = messages
+      .map((message) => message.sender)
+      .lastIndexOf("user");
+
+    if (lastUserIndex === -1) return;
+
+    const lastUserMessage = messages[lastUserIndex];
+
+    // Remove the failed user message before resending it.
+    const previousMessages = messages.slice(0, lastUserIndex);
+
+    setMessages(previousMessages);
+    sendMessage(lastUserMessage.text, previousMessages);
   };
 
   return (
-    <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 font-sans">
+    <>
+      {/* Floating chatbot button */}
       {!isOpen && (
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          aria-label="Open TITAN AI assistant"
-          className="group flex items-center gap-3 rounded-full border border-amber-300/40 bg-slate-950 p-2 pr-5 text-white shadow-2xl shadow-amber-500/20 transition-all duration-300 hover:-translate-y-1 hover:border-amber-400"
+          aria-label="Open TitanFit AI assistant"
+          className="fixed bottom-6 right-6 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-lime-400 text-black shadow-xl transition hover:scale-105 hover:bg-lime-300"
         >
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-400 text-slate-950 transition-transform group-hover:rotate-6">
-            <Sparkles className="h-6 w-6" />
+          <MessageCircle size={29} />
+          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+            AI
           </span>
-
-          <span className="text-left">
-            <span className="block text-sm font-extrabold tracking-wide">
-              TITAN AI
-            </span>
-            <span className="block text-[11px] text-slate-400">
-              Your fitness companion
-            </span>
-          </span>
-
-          <span className="absolute right-1 top-1 h-3 w-3 rounded-full border-2 border-slate-950 bg-emerald-400" />
         </button>
       )}
 
+      {/* Chat window */}
       {isOpen && (
         <section
-          role="dialog"
-          aria-label="TITAN AI fitness assistant"
-          className="flex h-[min(650px,80dvh)] w-[calc(100vw-2.5rem)] max-w-[410px] flex-col overflow-hidden rounded-3xl border border-slate-700/80 bg-slate-950 shadow-2xl shadow-black/50 animate-in fade-in slide-in-from-bottom-4 duration-300"
+          aria-label="TitanFit AI chatbot"
+          className="fixed bottom-4 right-4 z-50 flex h-[min(680px,85vh)] w-[min(420px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-gray-700 bg-gray-950 text-white shadow-2xl"
         >
           {/* Header */}
-          <header className="flex items-center justify-between border-b border-slate-800 bg-slate-900 p-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10 text-amber-400">
-                <Bot className="h-6 w-6" />
+          <header className="flex items-center justify-between border-b border-gray-800 bg-gray-900 p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-lime-400 text-black">
+                <Bot size={25} />
               </div>
 
-              <div className="min-w-0">
-                <h2 className="truncate text-sm font-extrabold text-white">
-                  TITAN AI Assistant
-                </h2>
-                <p className="mt-1 flex items-center gap-1.5 text-[11px] text-emerald-400">
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                  Fitness support
+              <div>
+                <h2 className="font-bold">TitanFit AI</h2>
+                <p className="flex items-center gap-1 text-xs text-green-400">
+                  <span className="h-2 w-2 rounded-full bg-green-400" />
+                  Fitness assistant
                 </p>
               </div>
             </div>
@@ -221,13 +236,13 @@ export default function AIChatbot() {
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={clearChat}
+                onClick={handleClearChat}
                 disabled={loading}
-                title="Clear conversation"
-                aria-label="Clear conversation"
-                className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-800 hover:text-amber-400 disabled:opacity-40"
+                title="Clear chat"
+                aria-label="Clear chat"
+                className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-800 hover:text-white disabled:opacity-40"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 size={18} />
               </button>
 
               <button
@@ -235,171 +250,187 @@ export default function AIChatbot() {
                 onClick={() => setIsOpen(false)}
                 title="Close chat"
                 aria-label="Close chat"
-                className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+                className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-800 hover:text-white"
               >
-                <X className="h-5 w-5" />
+                <X size={21} />
               </button>
             </div>
           </header>
 
           {/* Messages */}
-          <div
-            className="flex-1 space-y-4 overflow-y-auto bg-slate-950 p-4"
-            aria-live="polite"
-            aria-relevant="additions"
-          >
-            <div className="mb-5 rounded-2xl border border-amber-400/10 bg-gradient-to-br from-amber-400/10 to-transparent p-3">
-              <div className="mb-1 flex items-center gap-2 text-xs font-bold text-amber-400">
-                <Sparkles className="h-4 w-4" />
-                YOUR FITNESS PARTNER
-              </div>
-              <p className="text-xs leading-relaxed text-slate-400">
-                Get workout ideas, nutrition tips, and practical fitness
-                guidance tailored to your goals.
-              </p>
-            </div>
-
-            {messages.map((msg, index) => {
-              const isUser = msg.sender === 'user';
+          <div className="flex-1 space-y-4 overflow-y-auto p-4">
+            {messages.map((message, index) => {
+              const isUser = message.sender === "user";
 
               return (
                 <div
-                  key={`${msg.time}-${index}`}
-                  className={`flex items-start gap-2.5 ${
-                    isUser ? 'flex-row-reverse' : ''
+                  key={`${message.timestamp}-${index}`}
+                  className={`flex items-start gap-2 ${
+                    isUser ? "flex-row-reverse" : ""
                   }`}
                 >
                   <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                       isUser
-                        ? 'bg-slate-800 text-slate-200'
-                        : 'bg-amber-400 text-slate-950'
+                        ? "bg-gray-700 text-white"
+                        : "bg-lime-400 text-black"
                     }`}
                   >
-                    {isUser ? (
-                      <User className="h-4 w-4" />
-                    ) : (
-                      <Bot className="h-4 w-4" />
-                    )}
+                    {isUser ? <User size={17} /> : <Bot size={18} />}
                   </div>
 
                   <div
-                    className={`flex max-w-[82%] flex-col ${
-                      isUser ? 'items-end' : 'items-start'
+                    className={`max-w-[82%] rounded-2xl px-3 py-2.5 ${
+                      isUser
+                        ? "rounded-tr-sm bg-lime-400 text-black"
+                        : "rounded-tl-sm bg-gray-800 text-gray-100"
                     }`}
                   >
-                    <div
-                      className={`whitespace-pre-wrap break-words rounded-2xl px-3.5 py-3 text-xs leading-relaxed ${
-                        isUser
-                          ? 'rounded-tr-sm bg-amber-400 font-medium text-slate-950'
-                          : 'rounded-tl-sm border border-slate-800 bg-slate-900 text-slate-200'
+                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                      {message.text}
+                    </p>
+
+                    <p
+                      className={`mt-1 text-[10px] ${
+                        isUser ? "text-gray-800" : "text-gray-400"
                       }`}
                     >
-                      {msg.text}
-                    </div>
-
-                    <span className="mt-1 px-1 text-[9px] text-slate-600">
-                      {formatTime(msg.time)}
-                    </span>
+                      {new Date(message.timestamp).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
                   </div>
                 </div>
               );
             })}
 
             {loading && (
-              <div className="flex items-start gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400 text-slate-950">
-                  <Bot className="h-4 w-4" />
+              <div className="flex items-start gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-lime-400 text-black">
+                  <Bot size={18} />
                 </div>
 
-                <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm border border-slate-800 bg-slate-900 px-4 py-3">
-                  <span className="text-xs text-slate-400">
-                    TITAN AI is thinking
-                  </span>
-                  <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
+                <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm bg-gray-800 px-4 py-3 text-sm text-gray-300">
+                  <LoaderCircle size={16} className="animate-spin" />
+                  TitanFit AI is thinking...
                 </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="ml-10 rounded-xl border border-red-500/20 bg-red-500/10 p-3">
-                <p className="text-xs leading-relaxed text-red-300">
-                  {error}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handleSendMessage(null, messages.filter((m) => m.sender === 'user').at(-1)?.text)}
-                  disabled={loading || !messages.some((m) => m.sender === 'user')}
-                  className="mt-2 flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 disabled:opacity-40"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                  Try again
-                </button>
-              </div>
-            )}
-
-            {/* Suggested prompts appear before the conversation begins */}
-            {messages.length === 1 && !loading && (
-              <div className="space-y-2 pt-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                  Try asking
-                </p>
-
-                {SUGGESTIONS.map(({ label, icon: Icon }) => (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => handleSendMessage(null, label)}
-                    className="flex w-full items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-left text-xs font-medium text-slate-300 transition hover:border-amber-400/40 hover:bg-slate-900 hover:text-amber-300"
-                  >
-                    <Icon className="h-4 w-4 text-amber-400" />
-                    {label}
-                    <Send className="ml-auto h-3.5 w-3.5 opacity-50" />
-                  </button>
-                ))}
               </div>
             )}
 
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Suggested prompts */}
+          {messages.length === 1 && !loading && (
+            <div className="px-4 pb-3">
+              <p className="mb-2 flex items-center gap-1 text-xs text-gray-400">
+                <Sparkles size={13} />
+                Try asking
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {SUGGESTIONS.map((suggestion) => (
+                  <button
+                    type="button"
+                    key={suggestion}
+                    onClick={() => sendMessage(suggestion)}
+                    className="rounded-full border border-gray-700 px-3 py-2 text-xs text-gray-200 transition hover:border-lime-400 hover:text-lime-300"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Error and retry */}
+          {error && (
+            <div
+              role="alert"
+              className="mx-4 mb-3 rounded-lg border border-red-800 bg-red-950/50 p-3 text-sm text-red-200"
+            >
+              <p>{error}</p>
+
+              <div className="mt-2 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  disabled={loading || !messages.some(
+                    (message) => message.sender === "user"
+                  )}
+                  className="flex items-center gap-1 font-semibold underline disabled:opacity-40"
+                >
+                  <RefreshCw size={14} />
+                  Retry last message
+                </button>
+
+                {(error.toLowerCase().includes("log in") ||
+                  error.toLowerCase().includes("session") ||
+                  error.toLowerCase().includes("token")) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.location.href = "/login";
+                    }}
+                    className="font-semibold underline"
+                  >
+                    Go to login
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Input */}
           <form
-            onSubmit={handleSendMessage}
-            className="border-t border-slate-800 bg-slate-900 p-3"
+            onSubmit={handleSubmit}
+            className="border-t border-gray-800 bg-gray-900 p-3"
           >
-            <div className="flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-950 p-1.5 transition focus-within:border-amber-400/70">
-              <input
+            <div className="flex items-end gap-2 rounded-xl border border-gray-700 bg-gray-950 p-2 focus-within:border-lime-400">
+              <textarea
                 ref={inputRef}
-                type="text"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about workouts or nutrition..."
+                onChange={(event) => setInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (
+                    event.key === "Enter" &&
+                    !event.shiftKey &&
+                    !event.nativeEvent.isComposing
+                  ) {
+                    event.preventDefault();
+                    handleSubmit(event);
+                  }
+                }}
+                placeholder="Ask about fitness, workouts, diet..."
+                aria-label="Your message"
+                rows={1}
                 maxLength={2000}
-                aria-label="Message TITAN AI"
-                className="min-w-0 flex-1 bg-transparent px-2 py-2 text-xs text-white outline-none placeholder:text-slate-600"
+                disabled={loading}
+                className="max-h-28 min-h-10 flex-1 resize-y bg-transparent px-2 py-2 text-sm text-white outline-none placeholder:text-gray-500 disabled:opacity-50"
               />
 
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
                 aria-label="Send message"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-lime-400 text-black transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <LoaderCircle size={19} className="animate-spin" />
                 ) : (
-                  <Send className="h-4 w-4" />
+                  <Send size={18} />
                 )}
               </button>
             </div>
 
-            <p className="mt-2 text-center text-[9px] text-slate-600">
-              Fitness guidance only · Not a substitute for medical advice
+            <p className="mt-2 text-center text-[10px] text-gray-500">
+              AI-generated fitness guidance. Use your own judgment and consult
+              a qualified professional when needed.
             </p>
           </form>
         </section>
       )}
-    </div>
+    </>
   );
 }
