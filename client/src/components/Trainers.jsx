@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Award,
@@ -12,79 +11,49 @@ import {
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
-const trainers = [
-  {
-    name: 'Marcus Vance',
-    role: 'Head Strength & Conditioning',
-    experience: '8+ Years Exp.',
-    image:
-      'https://images.unsplash.com/photo-1567013127542-490d757e51fc?auto=format&fit=crop&q=80&w=600',
-    certifications: ['CSCS Certified', 'Olympic Lifting'],
-    bio: 'Marcus has trained elite athletes and bodybuilders for over 8 years. He specializes in strength progression, powerlifting, and hypertrophy.',
-    specialties: ['Powerlifting', 'Hypertrophy', 'Injury Prevention'],
-    rating: '4.9',
-  },
-  {
-    name: 'Elena Rostova',
-    role: 'HIIT & Mobility Specialist',
-    experience: '6+ Years Exp.',
-    image:
-      'https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=600',
-    certifications: ['CrossFit L2', 'Yoga Alliance RYT-500'],
-    bio: 'Elena blends explosive cardiovascular conditioning with joint mobility routines to ensure fat loss while maintaining joint longevity.',
-    specialties: ['HIIT Training', 'Mobility & Stretching', 'Fat Loss'],
-    rating: '5.0',
-  },
-  {
-    name: 'David Miller',
-    role: 'Bodybuilding & Powerlifting Coach',
-    experience: '10+ Years Exp.',
-    image:
-      'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&q=80&w=600',
-    certifications: ['NASM CPT', 'Precision Nutrition L2'],
-    bio: 'David combines science-backed strength programming with macro nutrition strategy to help members maximize muscle gains.',
-    specialties: ['Contest Prep', 'Strength Mechanics', 'Nutrition Coaching'],
-    rating: '4.9',
-  },
-  {
-    name: 'Sophia Chen',
-    role: 'Pilates & Functional Movement',
-    experience: '5+ Years Exp.',
-    image:
-      'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&q=80&w=600',
-    certifications: ['ACE Certified', 'Pilates Master Trainer'],
-    bio: 'Sophia focuses on core alignment, posture correction, and body awareness through low-impact Pilates and functional movement.',
-    specialties: ['Mat & Reformer Pilates', 'Core Stability', 'Postural Realignment'],
-    rating: '4.8',
-  },
-  {
-    name: 'Vikram Singh',
-    role: 'Fat Loss & Endurance Coach',
-    experience: '7+ Years Exp.',
-    image:
-      'https://images.unsplash.com/photo-1534367507873-d2d7e24c797f?auto=format&fit=crop&q=80&w=600',
-    certifications: ['ISSA Strength Coach', 'TRX Specialist'],
-    bio: 'Vikram specializes in body re-composition, metabolic conditioning, and endurance development through high-intensity circuit training.',
-    specialties: ['TRX Suspension', 'Metabolic Conditioning', 'Calisthenics'],
-    rating: '4.9',
-  },
-  {
-    name: 'Aaliyah Khan',
-    role: 'Boxing & Athletic Conditioning',
-    experience: '9+ Years Exp.',
-    image:
-      'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&q=80&w=600',
-    certifications: ['USA Boxing Coach', 'Kettlebell L2'],
-    bio: 'Aaliyah brings intense combat-sports conditioning, quick footwork drills, and kettlebell movements to build explosive speed.',
-    specialties: ['Boxing Footwork', 'Heavy Bag Drills', 'Explosive Power'],
-    rating: '5.0',
-  },
-];
-
 export default function Trainers() {
+  const [trainers, setTrainers] = useState([]);
   const [selectedTrainer, setSelectedTrainer] = useState(null);
   const [bookingStatus, setBookingStatus] = useState('');
   const [isBooking, setIsBooking] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
+
+  // Fetch trainers from backend
+  useEffect(() => {
+    const fetchTrainers = async () => {
+      try {
+        setIsLoading(true);
+        setFetchError('');
+
+        const res = await fetch(`${API_BASE_URL}/api/trainers`);
+
+        if (!res.ok) {
+          throw new Error('Failed to load trainers.');
+        }
+
+        const data = await res.json();
+
+        if (data.success && Array.isArray(data.data)) {
+          setTrainers(data.data);
+        } else {
+          setTrainers([]);
+          setFetchError(
+            data.message || 'No trainers available right now.'
+          );
+        }
+      } catch (err) {
+        console.error('Fetch trainers error:', err);
+        setFetchError(
+          'Unable to load trainers. Please check your server connection.'
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTrainers();
+  }, []);
 
   const openTrainer = (trainer) => {
     setSelectedTrainer(trainer);
@@ -93,11 +62,12 @@ export default function Trainers() {
 
   const closeTrainer = () => {
     if (isBooking) return;
+
     setSelectedTrainer(null);
     setBookingStatus('');
   };
 
-  // Book consultation with the selected trainer.
+  // Book consultation with the selected trainer
   const handleBookConsultation = async (trainer) => {
     const token = localStorage.getItem('titanfit_token');
 
@@ -121,8 +91,9 @@ export default function Trainers() {
       console.error('User parse error:', err);
     }
 
-    // Local date in YYYY-MM-DD format.
+    // Local date in YYYY-MM-DD format
     const now = new Date();
+
     const todayDate = [
       now.getFullYear(),
       String(now.getMonth() + 1).padStart(2, '0'),
@@ -137,16 +108,23 @@ export default function Trainers() {
           storedUser.name ||
           storedUser.fullName ||
           'TitanFit Member',
+
         email: storedUser.email || 'member@titanfit.com',
+
         phone:
           storedUser.phoneNumber ||
           storedUser.phone ||
           '9999999999',
+
         plan: `Consultation with ${trainer.name}`,
+
         preferredDate: todayDate,
+
         preferredTime: 'Morning (08:00 AM)',
+
         fitnessGoal:
           trainer.role || 'Fat Loss & Endurance Training',
+
         ...(trainerId ? { trainerId } : {}),
       };
 
@@ -180,6 +158,7 @@ export default function Trainers() {
       }
     } catch (err) {
       console.error('Booking Error:', err);
+
       setBookingStatus(
         'error: Server connection error. Check backend terminal.'
       );
@@ -210,60 +189,115 @@ export default function Trainers() {
           </p>
         </div>
 
-        {/* Trainer cards */}
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {trainers.map((trainer) => (
+        {/* Loading state */}
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-16 text-amber-500">
+            <LoaderCircle className="mb-3 h-8 w-8 animate-spin" />
+
+            <p className="text-sm text-slate-300">
+              Loading trainers...
+            </p>
+          </div>
+        )}
+
+        {/* Error state */}
+        {!isLoading && fetchError && (
+          <div
+            role="alert"
+            className="mx-auto max-w-xl rounded-xl border border-red-500/30 bg-red-500/10 p-5 text-center"
+          >
+            <p className="text-sm text-red-300">
+              {fetchError}
+            </p>
+
             <button
               type="button"
-              key={trainer.name}
-              onClick={() => openTrainer(trainer)}
-              aria-label={`View ${trainer.name}'s profile`}
-              className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 text-left shadow-lg transition-all duration-300 hover:scale-[1.02] hover:border-amber-500/50"
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-lg bg-amber-500 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-amber-400"
             >
-              <div className="relative h-80 w-full overflow-hidden">
-                <img
-                  src={trainer.image}
-                  alt={trainer.name}
-                  loading="lazy"
-                  className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                />
+              Retry
+            </button>
+          </div>
+        )}
 
-                <span className="absolute bottom-3 right-3 rounded-full border border-amber-500/20 bg-slate-950/80 px-3 py-1 text-xs font-semibold text-amber-400 backdrop-blur-md">
-                  {trainer.experience}
-                </span>
-              </div>
+        {/* Empty state */}
+        {!isLoading &&
+          !fetchError &&
+          trainers.length === 0 && (
+            <p className="py-12 text-center text-slate-400">
+              No trainers found.
+            </p>
+          )}
 
-              <div className="flex flex-1 flex-col justify-between p-6">
-                <div>
-                  <h4 className="mb-1 text-xl font-bold text-white transition-colors group-hover:text-amber-500">
-                    {trainer.name}
-                  </h4>
+        {/* Trainer cards */}
+        {!isLoading && !fetchError && trainers.length > 0 && (
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {trainers.map((trainer, index) => (
+              <button
+                type="button"
+                key={trainer._id || trainer.id || trainer.name || index}
+                onClick={() => openTrainer(trainer)}
+                aria-label={`View ${trainer.name}'s profile`}
+                className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 text-left shadow-lg transition-all duration-300 hover:scale-[1.02] hover:border-amber-500/50"
+              >
+                <div className="relative h-80 w-full overflow-hidden">
+                  <img
+                    src={
+                      trainer.image ||
+                      'https://placehold.co/600x800?text=Trainer'
+                    }
+                    alt={trainer.name || 'Fitness Trainer'}
+                    loading="lazy"
+                    className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                  />
 
-                  <p className="mb-4 text-sm font-medium text-amber-500">
-                    {trainer.role}
-                  </p>
+                  <span className="absolute bottom-3 right-3 rounded-full border border-amber-500/20 bg-slate-950/80 px-3 py-1 text-xs font-semibold text-amber-400 backdrop-blur-md">
+                    {trainer.experience || 'Experienced Coach'}
+                  </span>
                 </div>
 
-                <div className="border-t border-slate-800/80 pt-4">
-                  <p className="mb-2 text-xs font-medium text-slate-400">
-                    Certifications:
-                  </p>
+                <div className="flex flex-1 flex-col justify-between p-6">
+                  <div>
+                    <h4 className="mb-1 text-xl font-bold text-white transition-colors group-hover:text-amber-500">
+                      {trainer.name || 'Fitness Trainer'}
+                    </h4>
 
-                  <div className="flex flex-wrap gap-1.5">
-                    {trainer.certifications.map((cert) => (
-                      <span
-                        key={cert}
-                        className="rounded-md border border-slate-700/50 bg-slate-800 px-2.5 py-1 text-[11px] font-medium text-slate-300"
-                      >
-                        {cert}
-                      </span>
-                    ))}
+                    <p className="mb-4 text-sm font-medium text-amber-500">
+                      {trainer.role || 'Personal Trainer'}
+                    </p>
+                  </div>
+
+                  <div className="border-t border-slate-800/80 pt-4">
+                    <p className="mb-2 text-xs font-medium text-slate-400">
+                      Certifications:
+                    </p>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {(Array.isArray(trainer.certifications)
+                        ? trainer.certifications
+                        : []
+                      ).map((cert, certIndex) => (
+                        <span
+                          key={`${cert}-${certIndex}`}
+                          className="rounded-md border border-slate-700/50 bg-slate-800 px-2.5 py-1 text-[11px] font-medium text-slate-300"
+                        >
+                          {cert}
+                        </span>
+                      ))}
+
+                      {(!Array.isArray(trainer.certifications) ||
+                        trainer.certifications.length === 0) && (
+                        <span className="text-xs text-slate-500">
+                          Certifications not listed
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </button>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Trainer details modal */}
@@ -296,8 +330,11 @@ export default function Trainers() {
             {/* Trainer image and details */}
             <div className="relative h-56 sm:h-64">
               <img
-                src={selectedTrainer.image}
-                alt={selectedTrainer.name}
+                src={
+                  selectedTrainer.image ||
+                  'https://placehold.co/600x800?text=Trainer'
+                }
+                alt={selectedTrainer.name || 'Fitness Trainer'}
                 className="h-full w-full object-cover object-top"
               />
 
@@ -309,17 +346,18 @@ export default function Trainers() {
                     id="trainer-modal-title"
                     className="text-2xl font-bold text-white"
                   >
-                    {selectedTrainer.name}
+                    {selectedTrainer.name || 'Fitness Trainer'}
                   </h3>
 
                   <p className="text-xs font-medium text-amber-500">
-                    {selectedTrainer.role}
+                    {selectedTrainer.role || 'Personal Trainer'}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-400">
                   <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-                  {selectedTrainer.rating}
+
+                  {selectedTrainer.rating ?? 'N/A'}
                 </div>
               </div>
             </div>
@@ -333,7 +371,8 @@ export default function Trainers() {
                 </h4>
 
                 <p className="rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs leading-relaxed text-slate-300">
-                  {selectedTrainer.bio}
+                  {selectedTrainer.bio ||
+                    'Trainer biography is not available yet.'}
                 </p>
               </div>
 
@@ -344,15 +383,25 @@ export default function Trainers() {
                 </h4>
 
                 <div className="flex flex-wrap gap-2">
-                  {selectedTrainer.specialties.map((specialty) => (
+                  {(Array.isArray(selectedTrainer.specialties)
+                    ? selectedTrainer.specialties
+                    : []
+                  ).map((specialty, index) => (
                     <span
-                      key={specialty}
+                      key={`${specialty}-${index}`}
                       className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-slate-950 px-3 py-1 text-xs font-medium text-emerald-400"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
                       {specialty}
                     </span>
                   ))}
+
+                  {(!Array.isArray(selectedTrainer.specialties) ||
+                    selectedTrainer.specialties.length === 0) && (
+                    <span className="text-xs text-slate-500">
+                      Specialties not listed
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -363,15 +412,25 @@ export default function Trainers() {
                 </h4>
 
                 <div className="flex flex-wrap gap-2">
-                  {selectedTrainer.certifications.map((certification) => (
+                  {(Array.isArray(selectedTrainer.certifications)
+                    ? selectedTrainer.certifications
+                    : []
+                  ).map((certification, index) => (
                     <span
-                      key={certification}
+                      key={`${certification}-${index}`}
                       className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400"
                     >
                       <Award className="h-3.5 w-3.5" />
                       {certification}
                     </span>
                   ))}
+
+                  {(!Array.isArray(selectedTrainer.certifications) ||
+                    selectedTrainer.certifications.length === 0) && (
+                    <span className="text-xs text-slate-500">
+                      Certifications not listed
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -379,7 +438,9 @@ export default function Trainers() {
               <div className="pt-2">
                 <button
                   type="button"
-                  onClick={() => handleBookConsultation(selectedTrainer)}
+                  onClick={() =>
+                    handleBookConsultation(selectedTrainer)
+                  }
                   disabled={isBooking}
                   className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/10 transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-70"
                 >
@@ -392,7 +453,7 @@ export default function Trainers() {
                     <>
                       <Calendar className="h-4 w-4" />
                       Book Consultation with{' '}
-                      {selectedTrainer.name.split(' ')[0]}
+                      {(selectedTrainer.name || 'Trainer').split(' ')[0]}
                     </>
                   )}
                 </button>
