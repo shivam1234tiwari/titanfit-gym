@@ -63,6 +63,7 @@ app.use('/api/analytics', require('./routes/analyticsRoutes'));
 app.use('/api/payment', paymentRoutes);
 app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/workouts', require('./routes/workoutRoutes'));
+app.use('/api/trainers', require('./routes/trainerRoutes'));
 
 app.get('/', (req, res) => {
   res.send('TitanFit Gym API Running Successfully');
