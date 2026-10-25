@@ -2,12 +2,23 @@ const Trainer = require('../models/Trainer');
 const Message = require('../models/Message');
 
 // Get All Trainers
+// const Trainer = require('../models/Trainer');
+
 exports.getTrainers = async (req, res) => {
   try {
-    const trainers = await Trainer.find();
-    res.status(200).json({ success: true, count: trainers.length, trainers });
+    const trainers = await Trainer.find({});
+    return res.status(200).json({
+      success: true,
+      count: trainers.length,
+      data: trainers
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error fetching trainers:', error);
+    return res.status(200).json({
+      success: false,
+      message: 'Failed to fetch trainers from database',
+      data: []
+    });
   }
 };
 

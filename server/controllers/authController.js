@@ -1,4 +1,3 @@
-
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -115,7 +114,6 @@ exports.registerUser = async (req, res) => {
     });
 
     // 8. Send welcome email
-    // Email failure must not cancel successful registration.
     void sendEmailSafely({
       to: user.email,
       subject: 'Welcome to TitanFit Gym! 🏋️‍♂️',
@@ -212,54 +210,32 @@ const generateDietPlan = (goal) => {
     case 'Weight Loss':
       return {
         calories: '1,800 - 2,000 kcal/day',
-        macros: {
-          protein: '35%',
-          carbs: '35%',
-          fats: '30%'
-        },
-        breakfast:
-          'Oatmeal with chia seeds, berries, and 1 scoop whey protein',
-        lunch:
-          'Grilled chicken breast / Tofu with quinoa and green salad',
+        macros: { protein: '35%', carbs: '35%', fats: '30%' },
+        breakfast: 'Oatmeal with chia seeds, berries, and 1 scoop whey protein',
+        lunch: 'Grilled chicken breast / Tofu with quinoa and green salad',
         snack: 'Handful of almonds and green tea',
-        dinner:
-          'Baked fish / Paneer tikka with steamed broccoli & lentils'
+        dinner: 'Baked fish / Paneer tikka with steamed broccoli & lentils'
       };
 
     case 'Muscle Gain':
       return {
         calories: '2,800 - 3,200 kcal/day',
-        macros: {
-          protein: '40%',
-          carbs: '40%',
-          fats: '20%'
-        },
-        breakfast:
-          '4 whole eggs, 2 whole-wheat toasts, and a banana peanut butter smoothie',
-        lunch:
-          'Brown rice, double chicken breast / Soya chunks curry, and veggies',
-        snack:
-          'Greek yogurt with nuts, honey, and rice cakes',
-        dinner:
-          'Lean steak / Cottage cheese with sweet potatoes and asparagus'
+        macros: { protein: '40%', carbs: '40%', fats: '20%' },
+        breakfast: '4 whole eggs, 2 whole-wheat toasts, and a banana peanut butter smoothie',
+        lunch: 'Brown rice, double chicken breast / Soya chunks curry, and veggies',
+        snack: 'Greek yogurt with nuts, honey, and rice cakes',
+        dinner: 'Lean steak / Cottage cheese with sweet potatoes and asparagus'
       };
 
     case 'Maintenance':
     default:
       return {
         calories: '2,200 - 2,400 kcal/day',
-        macros: {
-          protein: '30%',
-          carbs: '45%',
-          fats: '25%'
-        },
-        breakfast:
-          'Vegetable omelet / Besan chilla with fresh fruit juice',
-        lunch:
-          'Balanced Thali: Whole wheat chapati, dal, mixed vegetable, and salad',
+        macros: { protein: '30%', carbs: '45%', fats: '25%' },
+        breakfast: 'Vegetable omelet / Besan chilla with fresh fruit juice',
+        lunch: 'Balanced Thali: Whole wheat chapati, dal, mixed vegetable, and salad',
         snack: 'Roasted chickpeas / Protein bar',
-        dinner:
-          'Grilled salmon / Tofu with brown rice and soup'
+        dinner: 'Grilled salmon / Tofu with brown rice and soup'
       };
   }
 };
@@ -270,8 +246,7 @@ const generateDietPlan = (goal) => {
  */
 exports.getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id)
-      .select('-password');
+    const user = await User.findById(req.user.id).select('-password');
 
     if (!user) {
       return res.status(404).json({
@@ -280,9 +255,7 @@ exports.getUserProfile = async (req, res) => {
       });
     }
 
-    const dietPlan = generateDietPlan(
-      user.goal || 'Maintenance'
-    );
+    const dietPlan = generateDietPlan(user.goal || 'Maintenance');
 
     return res.status(200).json({
       success: true,
@@ -327,7 +300,6 @@ exports.updateUserProfile = async (req, res) => {
       user.phoneNumber = req.body.phoneNumber;
     }
 
-    // Membership plan update
     const requestedPlan = req.body.membershipPlan;
     const previousPlan = user.membershipPlan;
 
@@ -337,14 +309,7 @@ exports.updateUserProfile = async (req, res) => {
 
     const updatedUser = await user.save();
 
-    // Send email only when a new/different plan is selected.
-    // This endpoint treats plan selection as activation;
-    // use a dedicated activation handler if admin approval
-    // or payment confirmation is required.
-    if (
-      requestedPlan &&
-      requestedPlan !== previousPlan
-    ) {
+    if (requestedPlan && requestedPlan !== previousPlan) {
       void sendEmailSafely({
         to: updatedUser.email,
         subject: 'Your TitanFit Membership is Active!',
@@ -355,9 +320,7 @@ exports.updateUserProfile = async (req, res) => {
       });
     }
 
-    const dietPlan = generateDietPlan(
-      updatedUser.goal || 'Maintenance'
-    );
+    const dietPlan = generateDietPlan(updatedUser.goal || 'Maintenance');
 
     return res.status(200).json({
       success: true,
@@ -402,7 +365,6 @@ exports.uploadProfilePic = async (req, res) => {
     }
 
     const imagePath = `/uploads/${req.file.filename}`;
-
     const user = await User.findById(req.user.id);
 
     if (!user) {
@@ -441,8 +403,7 @@ exports.googleAuthCallback = async (req, res) => {
       req.user.role || 'member'
     );
 
-    const frontendUrl =
-      process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
     return res.redirect(
       `${frontendUrl}?token=${encodeURIComponent(token)}`
@@ -458,7 +419,7 @@ exports.googleAuthCallback = async (req, res) => {
 };
 
 /**
- * @desc Get all members
+ * @desc Get all members (Legacy/General)
  * @route GET /api/auth/members
  */
 exports.getAllMembers = async (req, res) => {
@@ -511,6 +472,101 @@ exports.updateMemberByAdmin = async (req, res) => {
   } catch (error) {
     console.error('Admin Update Member Error:', error);
 
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/* ==========================================================================
+   ADMIN CONTROLLERS (MAPPED TO /api/admin ROUTES)
+   ========================================================================== */
+
+/**
+ * @desc Get all registered members with populated assigned trainers for Admin
+ * @route GET /api/admin/users
+ */
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({})
+      .select('-password')
+      .populate('assignedTrainer')
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    console.error('Admin Get Users Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
+ * @desc Assign or re-assign personal trainer to a member
+ * @route PUT /api/admin/assign-trainer
+ */
+exports.assignTrainerToUser = async (req, res) => {
+  try {
+    const { userId, trainerId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { assignedTrainer: trainerId || null },
+      { new: true }
+    )
+      .select('-password')
+      .populate('assignedTrainer');
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Trainer assigned successfully!',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Assign Trainer Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
+ * @desc Add new trainer profile from Admin panel
+ * @route POST /api/admin/trainers
+ */
+exports.addTrainer = async (req, res) => {
+  try {
+    const Trainer = require('../models/Trainer');
+    const newTrainer = await Trainer.create(req.body);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Trainer profile created successfully',
+      trainer: newTrainer
+    });
+  } catch (error) {
+    console.error('Admin Add Trainer Error:', error);
     return res.status(500).json({
       success: false,
       message: error.message

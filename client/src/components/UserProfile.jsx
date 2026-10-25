@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useCallback } from "react";
-// import { QRCodeSVG } from "qrcode.react";
-
 import {
   User,
   Camera,
@@ -19,62 +17,41 @@ import {
 } from "lucide-react";
 
 import { API_BASE_URL } from "../config";
+import WorkoutTracker from "./WorkoutTracker";
 
 const MEMBERSHIP_PLANS = [
   {
     id: "basic",
-
     name: "Basic Access",
-
     price: "1,499",
-
     features: [
       "Gym floor & equipment access",
-
       "Locker room & shower access",
-
       "1 complimentary body composition analysis",
-
       "Free high-speed Wi-Fi",
     ],
   },
-
   {
     id: "pro",
-
     name: "Pro Athlete",
-
     price: "2,999",
-
     features: [
       "Full gym access across all time slots",
-
       "Unlimited Zumba, Yoga & HIIT classes",
-
       "2 guest passes per month",
-
       "Steam & sauna access",
-
       "1 personal trainer guidance session per month",
     ],
   },
-
   {
     id: "vip",
-
     name: "VIP Elite",
-
     price: "4,999",
-
     features: [
       "24/7 unlimited gym & facility access",
-
       "4 personal training sessions per month",
-
       "Customized Indian diet & nutrition plan",
-
       "Unlimited guest passes",
-
       "Dedicated locker & complimentary towel service",
     ],
   },
@@ -94,54 +71,34 @@ const getActivePlanName = (user = {}) =>
 export default function UserProfile({ onClose, onLogout }) {
   const [profile, setProfile] = useState({
     name: "",
-
     email: "",
-
     phoneNumber: "",
-
     weight: "",
-
     height: "",
-
     goal: "Maintenance",
-
     profilePic: "",
-
     activePlan: "",
-
     membershipPlan: "",
   });
 
   const [dietPlan, setDietPlan] = useState(null);
-
   const [loading, setLoading] = useState(true);
-
   const [saving, setSaving] = useState(false);
-
   const [uploading, setUploading] = useState(false);
-
   const [msg, setMsg] = useState({ type: "", text: "" });
 
   const applyUser = useCallback((user, nextDietPlan) => {
     setProfile((previous) => ({
       ...previous,
-
       name: user.name ?? previous.name ?? "",
-
       email: user.email ?? previous.email ?? "",
-
       phoneNumber: user.phoneNumber ?? previous.phoneNumber ?? "",
-
       weight: user.weight ?? previous.weight ?? "",
-
       height: user.height ?? previous.height ?? "",
-
       goal: user.goal ?? previous.goal ?? "Maintenance",
-
       profilePic: user.profilePic ?? previous.profilePic ?? "",
-
-      activePlan: getActivePlanName(user) || getActivePlanName(previous),
-
+      activePlan:
+        getActivePlanName(user) || getActivePlanName(previous),
       membershipPlan:
         user.membershipPlan ||
         user.activePlan ||
@@ -150,7 +107,9 @@ export default function UserProfile({ onClose, onLogout }) {
         "",
     }));
 
-    if (nextDietPlan !== undefined) setDietPlan(nextDietPlan);
+    if (nextDietPlan !== undefined) {
+      setDietPlan(nextDietPlan);
+    }
   }, []);
 
   const fetchProfile = useCallback(async () => {
@@ -160,13 +119,17 @@ export default function UserProfile({ onClose, onLogout }) {
       const token = localStorage.getItem("titanfit_token");
 
       if (!token) {
-        setMsg({ type: "error", text: "Please log in to view your profile." });
-
+        setMsg({
+          type: "error",
+          text: "Please log in to view your profile.",
+        });
         return;
       }
 
       const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const data = await res.json();
@@ -176,7 +139,6 @@ export default function UserProfile({ onClose, onLogout }) {
           type: "error",
           text: data.message || "Failed to fetch profile.",
         });
-
         return;
       }
 
@@ -184,12 +146,10 @@ export default function UserProfile({ onClose, onLogout }) {
 
       const user = {
         ...savedUser,
-
         ...data.user,
-
         activePlan:
-          getActivePlanName(data.user) || getActivePlanName(savedUser),
-
+          getActivePlanName(data.user) ||
+          getActivePlanName(savedUser),
         membershipPlan:
           data.user.membershipPlan ||
           data.user.activePlan ||
@@ -208,7 +168,9 @@ export default function UserProfile({ onClose, onLogout }) {
 
       const savedUser = getSavedUser();
 
-      if (Object.keys(savedUser).length) applyUser(savedUser);
+      if (Object.keys(savedUser).length) {
+        applyUser(savedUser);
+      }
 
       setMsg({
         type: "error",
@@ -222,13 +184,7 @@ export default function UserProfile({ onClose, onLogout }) {
   useEffect(() => {
     fetchProfile();
 
-    // Listen for membership updates dispatched by MembershipPlans.jsx.*
-
     const handleMembershipUpdated = (event) => {
-      // MembershipPlans.jsx dispatches { detail: { plan: selectedPlan.name } }.*
-
-      // Accept alternative field names for backward compatibility.*
-
       const planName =
         event?.detail?.plan ||
         event?.detail?.activePlan ||
@@ -236,66 +192,53 @@ export default function UserProfile({ onClose, onLogout }) {
 
       if (!planName) return;
 
-      // Update React state immediately so the membership card rerenders.*
-
       setProfile((previous) => ({
         ...previous,
-
         activePlan: planName,
-
         membershipPlan: planName,
       }));
-
-      // Keep cached user data consistent with the visible profile.*
 
       const savedUser = getSavedUser();
 
       localStorage.setItem(
         "titanfit_user",
-
         JSON.stringify({
           ...savedUser,
-
           activePlan: planName,
-
           membershipPlan: planName,
-        }),
+        })
       );
 
       setMsg({
         type: "success",
-
         text: `${planName} membership updated in your profile.`,
       });
     };
 
-    // The storage event also supports updates made in another browser tab.*
-
     const handleStorage = (event) => {
-      if (event.key !== "titanfit_user" || !event.newValue) return;
+      if (event.key !== "titanfit_user" || !event.newValue) {
+        return;
+      }
 
       try {
         const user = JSON.parse(event.newValue);
-
         const planName = getActivePlanName(user);
 
         if (planName) {
           setProfile((previous) => ({
             ...previous,
-
             activePlan: planName,
-
             membershipPlan: planName,
           }));
         }
       } catch {
-        // Ignore malformed storage data.*
+        // Ignore malformed storage data.
       }
     };
 
     window.addEventListener(
       "titanfit:membership-updated",
-      handleMembershipUpdated,
+      handleMembershipUpdated
     );
 
     window.addEventListener("storage", handleStorage);
@@ -303,7 +246,7 @@ export default function UserProfile({ onClose, onLogout }) {
     return () => {
       window.removeEventListener(
         "titanfit:membership-updated",
-        handleMembershipUpdated,
+        handleMembershipUpdated
       );
 
       window.removeEventListener("storage", handleStorage);
@@ -313,7 +256,10 @@ export default function UserProfile({ onClose, onLogout }) {
   const handleChange = (event) => {
     const { name, value } = event.target;
 
-    setProfile((previous) => ({ ...previous, [name]: value }));
+    setProfile((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
   };
 
   const handleFileUpload = async (event) => {
@@ -322,42 +268,50 @@ export default function UserProfile({ onClose, onLogout }) {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setMsg({ type: "error", text: "Please choose an image file." });
+      setMsg({
+        type: "error",
+        text: "Please choose an image file.",
+      });
 
       event.target.value = "";
-
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setMsg({ type: "error", text: "Image file size must be less than 5MB." });
+      setMsg({
+        type: "error",
+        text: "Image file size must be less than 5MB.",
+      });
 
       event.target.value = "";
-
       return;
     }
 
     const formData = new FormData();
-
     formData.append("profilePic", file);
 
     setUploading(true);
-
     setMsg({ type: "", text: "" });
 
     try {
       const token = localStorage.getItem("titanfit_token");
 
-      if (!token)
-        throw new Error("Please log in before uploading a profile picture.");
+      if (!token) {
+        throw new Error(
+          "Please log in before uploading a profile picture."
+        );
+      }
 
-      const res = await fetch(`${API_BASE_URL}/api/auth/upload-avatar`, {
-        method: "POST",
-
-        headers: { Authorization: `Bearer ${token}` },
-
-        body: formData,
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/api/auth/upload-avatar`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
 
       const data = await res.json();
 
@@ -369,13 +323,19 @@ export default function UserProfile({ onClose, onLogout }) {
         ? data.profilePic
         : `${API_BASE_URL}${data.profilePic}`;
 
-      setProfile((previous) => ({ ...previous, profilePic: imageUrl }));
+      setProfile((previous) => ({
+        ...previous,
+        profilePic: imageUrl,
+      }));
 
       const savedUser = getSavedUser();
 
       localStorage.setItem(
         "titanfit_user",
-        JSON.stringify({ ...savedUser, profilePic: imageUrl }),
+        JSON.stringify({
+          ...savedUser,
+          profilePic: imageUrl,
+        })
       );
 
       setMsg({
@@ -389,7 +349,6 @@ export default function UserProfile({ onClose, onLogout }) {
       });
     } finally {
       setUploading(false);
-
       event.target.value = "";
     }
   };
@@ -398,43 +357,33 @@ export default function UserProfile({ onClose, onLogout }) {
     event.preventDefault();
 
     setSaving(true);
-
     setMsg({ type: "", text: "" });
 
     try {
       const token = localStorage.getItem("titanfit_token");
 
-      if (!token) throw new Error("Please log in to save your profile.");
-
-      // Keep membership fields in the payload so profile edits don't overwrite them.*
+      if (!token) {
+        throw new Error("Please log in to save your profile.");
+      }
 
       const payload = {
         name: profile.name,
-
         phoneNumber: profile.phoneNumber,
-
         weight: profile.weight,
-
         height: profile.height,
-
         goal: profile.goal,
-
         profilePic: profile.profilePic,
-
         activePlan: profile.activePlan,
-
-        membershipPlan: profile.membershipPlan || profile.activePlan,
+        membershipPlan:
+          profile.membershipPlan || profile.activePlan,
       };
 
       const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
         method: "PUT",
-
         headers: {
           "Content-Type": "application/json",
-
           Authorization: `Bearer ${token}`,
         },
-
         body: JSON.stringify(payload),
       });
 
@@ -446,23 +395,28 @@ export default function UserProfile({ onClose, onLogout }) {
 
       const savedUser = {
         ...getSavedUser(),
-
         ...(data.user || {}),
-
         ...payload,
-
         email: data.user?.email || profile.email,
       };
 
       applyUser(savedUser, data.dietPlan ?? dietPlan);
 
-      localStorage.setItem("titanfit_user", JSON.stringify(savedUser));
+      localStorage.setItem(
+        "titanfit_user",
+        JSON.stringify(savedUser)
+      );
 
-      setMsg({ type: "success", text: "Profile updated successfully." });
+      setMsg({
+        type: "success",
+        text: "Profile updated successfully.",
+      });
     } catch (error) {
       setMsg({
         type: "error",
-        text: error.message || "Server connection error. Please try again.",
+        text:
+          error.message ||
+          "Server connection error. Please try again.",
       });
     } finally {
       setSaving(false);
@@ -471,13 +425,18 @@ export default function UserProfile({ onClose, onLogout }) {
 
   const calculateBMI = () => {
     const weight = Number.parseFloat(profile.weight);
-
     const height = Number.parseFloat(profile.height) / 100;
 
-    if (!weight || !height || weight <= 0 || height <= 0) return null;
+    if (
+      !weight ||
+      !height ||
+      weight <= 0 ||
+      height <= 0
+    ) {
+      return null;
+    }
 
     const bmi = (weight / (height * height)).toFixed(1);
-
     const value = Number(bmi);
 
     let category = "Normal";
@@ -490,18 +449,20 @@ export default function UserProfile({ onClose, onLogout }) {
 
   const bmiData = calculateBMI();
 
-  const activePlanName = profile.activePlan || profile.membershipPlan;
+  const activePlanName =
+    profile.activePlan || profile.membershipPlan;
 
   const activePlan = MEMBERSHIP_PLANS.find(
-    (plan) => plan.name === activePlanName,
+    (plan) => plan.name === activePlanName
   );
 
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center text-amber-500">
         <Loader2 className="w-8 h-8 animate-spin" />
-
-        <span className="ml-3 text-sm">Loading profile...</span>
+        <span className="ml-3 text-sm">
+          Loading profile...
+        </span>
       </div>
     );
   }
@@ -509,6 +470,7 @@ export default function UserProfile({ onClose, onLogout }) {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans">
       <div className="max-w-5xl mx-auto space-y-6">
+        {/* Top navigation */}
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -524,10 +486,12 @@ export default function UserProfile({ onClose, onLogout }) {
             onClick={fetchProfile}
             className="flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-amber-500 px-3 py-2"
           >
-            <RefreshCw className="w-4 h-4" /> Refresh
+            <RefreshCw className="w-4 h-4" />
+            Refresh
           </button>
         </div>
 
+        {/* Profile header */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row items-center gap-6">
           <div className="relative">
             <div className="w-28 h-28 rounded-full bg-slate-800 border-2 border-amber-500/40 overflow-hidden flex items-center justify-center">
@@ -570,7 +534,9 @@ export default function UserProfile({ onClose, onLogout }) {
 
             <p className="text-xs text-slate-400 mt-1">
               {profile.email}
-              {profile.phoneNumber ? ` • +91 ${profile.phoneNumber}` : ""}
+              {profile.phoneNumber
+                ? ` • +91 ${profile.phoneNumber}`
+                : ""}
             </p>
 
             <div className="mt-3 flex flex-wrap gap-2 justify-center md:justify-start">
@@ -587,6 +553,7 @@ export default function UserProfile({ onClose, onLogout }) {
           </div>
         </div>
 
+        {/* Success and error messages */}
         {msg.text && (
           <div
             role="status"
@@ -597,106 +564,85 @@ export default function UserProfile({ onClose, onLogout }) {
             }`}
           >
             <CheckCircle className="w-4 h-4 shrink-0" />
-
             <span>{msg.text}</span>
           </div>
         )}
 
-        {/* Membership details synced with MembershipPlans.jsx */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <section className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
-                <Crown className="w-5 h-5" />
-              </div>
-
-              <div>
-                <h2 className="text-base font-bold text-white">
-                  My Membership
-                </h2>
-
-                <p className="text-xs text-slate-400">
-                  Your current TitanFit membership plan
-                </p>
-              </div>
+        {/* Membership section */}
+        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+              <Crown className="w-5 h-5" />
             </div>
 
-            {activePlan ? (
-              <div className="rounded-xl border border-amber-500/30 bg-slate-950 p-5">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold">
-                      Active plan
-                    </span>
+            <div>
+              <h2 className="text-base font-bold text-white">
+                My Membership
+              </h2>
 
-                    <h3 className="text-xl font-black text-white mt-1">
-                      {activePlan.name}
-                    </h3>
-                  </div>
+              <p className="text-xs text-slate-400">
+                Your current TitanFit membership plan
+              </p>
+            </div>
+          </div>
 
-                  <div className="text-left sm:text-right">
-                    <p className="text-2xl font-black text-amber-400">
-                      ₹{activePlan.price}
-                    </p>
+          {activePlan ? (
+            <div className="rounded-xl border border-amber-500/30 bg-slate-950 p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <div>
+                  <span className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold">
+                    Active plan
+                  </span>
 
-                    <p className="text-xs text-slate-400">per month</p>
-                  </div>
+                  <h3 className="text-xl font-black text-white mt-1">
+                    {activePlan.name}
+                  </h3>
                 </div>
 
-                <ul className="grid sm:grid-cols-2 gap-3">
-                  {activePlan.features.map((feature) => (
-                    <li
-                      key={feature}
-                      className="flex items-start gap-2 text-sm text-slate-300"
-                    >
-                      <Check className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <div className="text-left sm:text-right">
+                  <p className="text-2xl font-black text-amber-400">
+                    ₹{activePlan.price}
+                  </p>
 
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+                  <p className="text-xs text-slate-400">
+                    per month
+                  </p>
+                </div>
               </div>
-            ) : (
-              <div className="rounded-xl border border-slate-800 bg-slate-950 p-5 text-center">
-                <p className="text-sm font-semibold text-white">
-                  No active membership
-                </p>
 
-                <p className="text-xs text-slate-400 mt-1">
-                  Choose a plan from the Membership Plans section to see it
-                  here.
-                </p>
-              </div>
-            )}
-
-            <p className="text-[11px] text-slate-500 mt-3">
-              Membership status is read from your profile API and saved user
-              data. Plan activation in the current MembershipPlans component
-              does not itself charge a payment.
-            </p>
-          </section>
-
-          {/* <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center flex flex-col items-center shadow-xl">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-3">
-              Digital Gym Pass (QR Code)
-            </h4>
-            <div className="bg-white p-3 rounded-xl border-4 border-amber-500 shadow-lg">
-              <QRCodeSVG
-                value={profile._id || profile.id || "titanfit_member"}
-                size={130}
-                level="H"
-              />
+              <ul className="grid sm:grid-cols-2 gap-3">
+                {activePlan.features.map((feature) => (
+                  <li
+                    key={feature}
+                    className="flex items-start gap-2 text-sm text-slate-300"
+                  >
+                    <Check className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <p className="text-[11px] text-slate-400 mt-3">
-              Scan this QR code at the reception desk for daily check-in.
-            </p>
-          </div> */}
-        </div>
+          ) : (
+            <div className="rounded-xl border border-slate-800 bg-slate-950 p-5 text-center">
+              <p className="text-sm font-semibold text-white">
+                No active membership
+              </p>
 
+              <p className="text-xs text-slate-400 mt-1">
+                Choose a plan from the Membership Plans section to see it
+                here.
+              </p>
+            </div>
+          )}
+        </section>
+
+        {/* Edit profile and diet plan */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+          {/* Edit Fitness Profile */}
+          <section className="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
             <h2 className="text-sm font-bold text-amber-500 uppercase tracking-wider flex items-center gap-2">
-              <Activity className="w-4 h-4" /> Edit Fitness Profile
+              <Activity className="w-4 h-4" />
+              Edit Fitness Profile
             </h2>
 
             <form onSubmit={handleSave} className="space-y-4 text-xs">
@@ -720,7 +666,10 @@ export default function UserProfile({ onClose, onLogout }) {
               </div>
 
               <div>
-                <label htmlFor="name" className="text-slate-400 block mb-1">
+                <label
+                  htmlFor="name"
+                  className="text-slate-400 block mb-1"
+                >
                   Full Name
                 </label>
 
@@ -736,7 +685,10 @@ export default function UserProfile({ onClose, onLogout }) {
               </div>
 
               <div>
-                <label htmlFor="goal" className="text-slate-400 block mb-1">
+                <label
+                  htmlFor="goal"
+                  className="text-slate-400 block mb-1"
+                >
                   Fitness Goal
                 </label>
 
@@ -751,9 +703,7 @@ export default function UserProfile({ onClose, onLogout }) {
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-white focus:border-amber-500 focus:outline-none"
                   >
                     <option value="Weight Loss">Weight Loss</option>
-
                     <option value="Muscle Gain">Muscle Gain</option>
-
                     <option value="Maintenance">Maintenance</option>
                   </select>
                 </div>
@@ -761,7 +711,10 @@ export default function UserProfile({ onClose, onLogout }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="weight" className="text-slate-400 block mb-1">
+                  <label
+                    htmlFor="weight"
+                    className="text-slate-400 block mb-1"
+                  >
                     Weight (kg)
                   </label>
 
@@ -784,7 +737,10 @@ export default function UserProfile({ onClose, onLogout }) {
                 </div>
 
                 <div>
-                  <label htmlFor="height" className="text-slate-400 block mb-1">
+                  <label
+                    htmlFor="height"
+                    className="text-slate-400 block mb-1"
+                  >
                     Height (cm)
                   </label>
 
@@ -818,17 +774,20 @@ export default function UserProfile({ onClose, onLogout }) {
                   <Save className="w-4 h-4" />
                 )}
 
-                <span>{saving ? "Saving..." : "Save Changes"}</span>
+                <span>
+                  {saving ? "Saving..." : "Save Changes"}
+                </span>
               </button>
             </form>
-          </div>
+          </section>
 
-          <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+          {/* Personalized Diet Plan */}
+          <section className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4 gap-4">
               <div>
                 <h2 className="text-base font-bold text-white flex items-center gap-2">
-                  <Utensils className="w-5 h-5 text-amber-500" /> Personalized
-                  Diet Plan
+                  <Utensils className="w-5 h-5 text-amber-500" />
+                  Personalized Diet Plan
                 </h2>
 
                 <p className="text-xs text-slate-400 mt-0.5">
@@ -888,11 +847,8 @@ export default function UserProfile({ onClose, onLogout }) {
 
                 {[
                   ["🌅 Breakfast", dietPlan.breakfast],
-
                   ["☀️ Lunch", dietPlan.lunch],
-
                   ["🍎 Afternoon Snack", dietPlan.snack],
-
                   ["🌙 Dinner", dietPlan.dinner],
                 ].map(([label, meal]) => (
                   <div
@@ -911,12 +867,32 @@ export default function UserProfile({ onClose, onLogout }) {
               </div>
             ) : (
               <p className="text-xs text-slate-500">
-                Select your fitness goal and save your profile to display your
-                diet plan.
+                Your personalized diet plan is not available yet.
+                Update your fitness profile and refresh after the backend
+                generates the plan.
               </p>
             )}
-          </div>
+          </section>
         </div>
+
+        {/* Workout Tracker */}
+        <section
+          id="workout-tracker"
+          className="mt-10 border-t border-slate-800 pt-8"
+        >
+          <div className="mb-6">
+            <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-3">
+              <Activity className="w-6 h-6 text-amber-500" />
+              Workout Tracker
+            </h2>
+
+            <p className="text-sm text-slate-400 mt-2">
+              Track your workouts and monitor your fitness progress.
+            </p>
+          </div>
+
+          <WorkoutTracker />
+        </section>
       </div>
     </div>
   );

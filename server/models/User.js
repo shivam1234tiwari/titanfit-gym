@@ -25,7 +25,18 @@ const userSchema = new mongoose.Schema({
       checkInTime: { type: Date, default: Date.now },
       verifiedBy: { type: String, default: 'Admin Desk' }
     }
-  ]
+  ],
+  enrolledPrograms: [
+  {
+    programId: String,
+    programTitle: String,
+    category: String,
+    enrolledAt: {
+      type: Date,
+      default: Date.now
+    }
+  }
+]
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
