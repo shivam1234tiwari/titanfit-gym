@@ -1,4 +1,3 @@
-
 // src/components/Programs.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -136,6 +135,7 @@ const programs = [
 
 const categories = [
   "All",
+  "Saved",
   "Strength",
   "Cardio",
   "HIIT",
@@ -183,12 +183,17 @@ export default function Programs() {
     };
   }, [selectedProgram]);
 
+  // Single Memoized Filter Logic
   const filteredPrograms = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     return programs.filter((program) => {
       const matchesCategory =
-        category === "All" || program.category === category;
+        category === "All"
+          ? true
+          : category === "Saved"
+          ? savedPrograms.includes(program.id)
+          : program.category === category;
 
       const matchesSearch =
         !query ||
@@ -199,7 +204,7 @@ export default function Programs() {
 
       return matchesCategory && matchesSearch;
     });
-  }, [search, category]);
+  }, [search, category, savedPrograms]);
 
   const toggleSaved = (programId) => {
     setSavedPrograms((current) =>
@@ -231,7 +236,6 @@ export default function Programs() {
     setNotice(null);
 
     try {
-      // Backend must implement POST /api/programs/enroll.
       const response = await fetch(`${API_BASE_URL}/api/programs/enroll`, {
         method: "POST",
         headers: {
@@ -570,15 +574,11 @@ export default function Programs() {
               type="button"
               onClick={() => {
                 setSearch("");
-                setCategory("All");
-                setNotice({
-                  type: "success",
-                  text: `You have ${savedPrograms.length} saved program(s). Look for the highlighted bookmark icons.`,
-                });
+                setCategory("Saved");
               }}
               className="text-sm font-bold text-amber-500 hover:text-amber-300"
             >
-              View programs
+              View saved programs
             </button>
           </div>
         )}

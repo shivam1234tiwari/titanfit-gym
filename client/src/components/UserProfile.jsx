@@ -14,6 +14,10 @@ import {
   Check,
   Crown,
   RefreshCw,
+  Bookmark,
+  Award,
+  ArrowRight,
+  Trash2,
 } from "lucide-react";
 
 import { API_BASE_URL } from "../config";
@@ -79,6 +83,7 @@ export default function UserProfile({ onClose, onLogout }) {
     profilePic: "",
     activePlan: "",
     membershipPlan: "",
+    assignedTrainer: null,
   });
 
   const [dietPlan, setDietPlan] = useState(null);
@@ -86,6 +91,25 @@ export default function UserProfile({ onClose, onLogout }) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
+  const [savedPrograms, setSavedPrograms] = useState([]);
+
+  // Load saved programs from LocalStorage
+  const loadSavedPrograms = useCallback(() => {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem("titanfit_saved_programs") || "[]"
+      );
+      setSavedPrograms(saved);
+    } catch {
+      setSavedPrograms([]);
+    }
+  }, []);
+
+  const removeSavedProgram = (id) => {
+    const updated = savedPrograms.filter((pId) => pId !== id);
+    setSavedPrograms(updated);
+    localStorage.setItem("titanfit_saved_programs", JSON.stringify(updated));
+  };
 
   const applyUser = useCallback((user, nextDietPlan) => {
     setProfile((previous) => ({
@@ -105,6 +129,7 @@ export default function UserProfile({ onClose, onLogout }) {
         previous.membershipPlan ||
         previous.activePlan ||
         "",
+      assignedTrainer: user.assignedTrainer || previous.assignedTrainer || null,
     }));
 
     if (nextDietPlan !== undefined) {
@@ -183,6 +208,7 @@ export default function UserProfile({ onClose, onLogout }) {
 
   useEffect(() => {
     fetchProfile();
+    loadSavedPrograms();
 
     const handleMembershipUpdated = (event) => {
       const planName =
@@ -216,6 +242,10 @@ export default function UserProfile({ onClose, onLogout }) {
     };
 
     const handleStorage = (event) => {
+      if (event.key === "titanfit_saved_programs") {
+        loadSavedPrograms();
+      }
+
       if (event.key !== "titanfit_user" || !event.newValue) {
         return;
       }
@@ -251,7 +281,7 @@ export default function UserProfile({ onClose, onLogout }) {
 
       window.removeEventListener("storage", handleStorage);
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, loadSavedPrograms]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -427,12 +457,7 @@ export default function UserProfile({ onClose, onLogout }) {
     const weight = Number.parseFloat(profile.weight);
     const height = Number.parseFloat(profile.height) / 100;
 
-    if (
-      !weight ||
-      !height ||
-      weight <= 0 ||
-      height <= 0
-    ) {
+    if (!weight || !height || weight <= 0 || height <= 0) {
       return null;
     }
 
@@ -460,9 +485,7 @@ export default function UserProfile({ onClose, onLogout }) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center text-amber-500">
         <Loader2 className="w-8 h-8 animate-spin" />
-        <span className="ml-3 text-sm">
-          Loading profile...
-        </span>
+        <span className="ml-3 text-sm">Loading profile...</span>
       </div>
     );
   }
@@ -534,9 +557,7 @@ export default function UserProfile({ onClose, onLogout }) {
 
             <p className="text-xs text-slate-400 mt-1">
               {profile.email}
-              {profile.phoneNumber
-                ? ` • +91 ${profile.phoneNumber}`
-                : ""}
+              {profile.phoneNumber ? ` • +91 ${profile.phoneNumber}` : ""}
             </p>
 
             <div className="mt-3 flex flex-wrap gap-2 justify-center md:justify-start">
@@ -604,9 +625,7 @@ export default function UserProfile({ onClose, onLogout }) {
                     ₹{activePlan.price}
                   </p>
 
-                  <p className="text-xs text-slate-400">
-                    per month
-                  </p>
+                  <p className="text-xs text-slate-400">per month</p>
                 </div>
               </div>
 
@@ -629,12 +648,130 @@ export default function UserProfile({ onClose, onLogout }) {
               </p>
 
               <p className="text-xs text-slate-400 mt-1">
-                Choose a plan from the Membership Plans section to see it
-                here.
+                Choose a plan from the Membership Plans section to see it here.
               </p>
             </div>
           )}
         </section>
+
+        {/* Saved Programs & Assigned Trainer Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Saved Programs Card */}
+          <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+                    <Bookmark className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-white">
+                      Saved Programs
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                      Your bookmarked workouts
+                    </p>
+                  </div>
+                </div>
+
+                <span className="text-xs font-semibold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
+                  {savedPrograms.length} Saved
+                </span>
+              </div>
+
+              {savedPrograms.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-800 p-5 text-center my-2">
+                  <p className="text-xs text-slate-400">
+                    No programs bookmarked yet.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="mt-2 text-xs font-bold text-amber-500 hover:underline"
+                  >
+                    Browse Programs →
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                  {savedPrograms.map((programId) => (
+                    <div
+                      key={programId}
+                      className="flex items-center justify-between bg-slate-950 border border-slate-800/80 rounded-xl p-3"
+                    >
+                      <div>
+                        <p className="text-xs font-bold text-white capitalize">
+                          {programId.replace(/-/g, " ")}
+                        </p>
+                        <span className="text-[10px] text-amber-500 font-medium">
+                          Bookmarked
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removeSavedProgram(programId)}
+                        title="Remove program"
+                        className="p-1.5 text-slate-500 hover:text-rose-400 transition"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Assigned Trainer Card */}
+          <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">
+                    Assigned Personal Trainer
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Dedicated coach assigned by Admin
+                  </p>
+                </div>
+              </div>
+
+              {profile.assignedTrainer ? (
+                <div className="flex items-center gap-4 bg-slate-950 border border-slate-800 rounded-xl p-4">
+                  <img
+                    src={profile.assignedTrainer.image}
+                    alt={profile.assignedTrainer.name}
+                    className="w-14 h-14 rounded-xl object-cover border border-amber-500/30"
+                  />
+                  <div>
+                    <h3 className="text-sm font-bold text-white">
+                      {profile.assignedTrainer.name}
+                    </h3>
+                    <p className="text-xs text-amber-500 font-medium">
+                      {profile.assignedTrainer.role}
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Exp: {profile.assignedTrainer.experienceYears} Years
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-slate-800 p-5 text-center my-2">
+                  <p className="text-xs text-slate-400">
+                    No dedicated trainer assigned yet.
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Contact TitanFit desk to get a personal coach.
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
 
         {/* Edit profile and diet plan */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -774,9 +911,7 @@ export default function UserProfile({ onClose, onLogout }) {
                   <Save className="w-4 h-4" />
                 )}
 
-                <span>
-                  {saving ? "Saving..." : "Save Changes"}
-                </span>
+                <span>{saving ? "Saving..." : "Save Changes"}</span>
               </button>
             </form>
           </section>
@@ -867,9 +1002,9 @@ export default function UserProfile({ onClose, onLogout }) {
               </div>
             ) : (
               <p className="text-xs text-slate-500">
-                Your personalized diet plan is not available yet.
-                Update your fitness profile and refresh after the backend
-                generates the plan.
+                Your personalized diet plan is not available yet. Update your
+                fitness profile and refresh after the backend generates the
+                plan.
               </p>
             )}
           </section>
