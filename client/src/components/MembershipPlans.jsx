@@ -1,6 +1,6 @@
-import React from 'react';
-import { Check } from 'lucide-react';
-import PaymentButton from './PaymentButton';
+import React, { useState } from 'react';
+import { Check, CheckCircle, Sparkles } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 const plans = [
   {
@@ -47,48 +47,101 @@ const plans = [
 ];
 
 export default function MembershipPlans({ onSelectPlan }) {
-  const handlePaymentSuccess = (plan, updatedPlan) => {
-    // Preserve the current user data and apply membership details returned
-    // by PaymentButton, if it provides them.
-    let existingUser = {};
+  const [loadingPlan, setLoadingPlan] = useState(null);
+  const [notification, setNotification] = useState({ show: false, message: '', type: '' });
 
-    try {
-      existingUser = JSON.parse(localStorage.getItem('titanfit_user') || '{}');
-    } catch (error) {
-      console.error('Could not read saved TitanFit user:', error);
+  const showToast = (message, type = 'success') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification({ show: false, message: '', type: '' });
+    }, 4000);
+  };
+
+  const handleDirectActivate = async (plan) => {
+    const token = localStorage.getItem('titanfit_token');
+    if (!token) {
+      showToast('Please log in to activate a membership plan.', 'error');
+      return;
     }
 
-    const membershipName =
-      (updatedPlan && (updatedPlan.membershipPlan || updatedPlan.activePlan || updatedPlan.planName)) ||
-      plan.name;
+    setLoadingPlan(plan.id);
 
-    const updatedUser = {
-      ...existingUser,
-      ...(updatedPlan && typeof updatedPlan === 'object' ? updatedPlan : {}),
-      activePlan: membershipName,
-      membershipPlan: membershipName,
-    };
-
-    localStorage.setItem('titanfit_user', JSON.stringify(updatedUser));
-
-    // Notify components listening for membership changes in this tab.
-    window.dispatchEvent(
-      new CustomEvent('titanfit:membership-updated', {
-        detail: {
-          plan: membershipName,
-          user: updatedUser,
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-      }),
-    );
+        body: JSON.stringify({
+          activePlan: plan.name,
+          membershipPlan: plan.name,
+        }),
+      });
 
-    // Notify the parent component/context so it can refresh its own state.
-    if (typeof onSelectPlan === 'function') {
-      onSelectPlan(membershipName, updatedUser);
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        let existingUser = {};
+        try {
+          existingUser = JSON.parse(localStorage.getItem('titanfit_user') || '{}');
+        } catch (error) {
+          console.error('Could not read saved TitanFit user:', error);
+        }
+
+        const updatedUser = {
+          ...existingUser,
+          ...(data.data || {}),
+          activePlan: plan.name,
+          membershipPlan: plan.name,
+        };
+
+        localStorage.setItem('titanfit_user', JSON.stringify(updatedUser));
+
+        window.dispatchEvent(
+          new CustomEvent('titanfit:membership-updated', {
+            detail: {
+              plan: plan.name,
+              user: updatedUser,
+            },
+          })
+        );
+
+        if (typeof onSelectPlan === 'function') {
+          onSelectPlan(plan.name, updatedUser);
+        }
+
+        // Default alert(...) browser popup ko yahan custom notification se replace kar diya hai
+        showToast(`🎉 ${plan.name} Plan activated successfully!`, 'success');
+      } else {
+        showToast(data.message || 'Failed to activate plan.', 'error');
+      }
+    } catch (error) {
+      console.error('Activation Error:', error);
+      showToast('Server error while activating plan.', 'error');
+    } finally {
+      setLoadingPlan(null);
     }
   };
 
   return (
     <section id="membership" className="relative bg-slate-950 py-20">
+      {/* Custom Modern Floating Toast Notification */}
+      {notification.show && (
+        <div className="fixed top-6 right-6 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div
+            className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border backdrop-blur-xl ${
+              notification.type === 'success'
+                ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-300'
+                : 'bg-rose-950/90 border-rose-500/30 text-rose-300'
+            }`}
+          >
+            <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+            <span className="text-xs font-bold tracking-wide">{notification.message}</span>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="mx-auto mb-16 max-w-2xl text-center">
@@ -99,7 +152,7 @@ export default function MembershipPlans({ onSelectPlan }) {
             Invest In Your Health
           </h3>
           <p className="mt-2 text-sm text-slate-400 sm:text-base">
-            Flexible plans designed for all fitness levels. No hidden charges.
+            Flexible plans designed for all fitness levels. Instant one-click activation.
           </p>
         </div>
 
@@ -143,13 +196,14 @@ export default function MembershipPlans({ onSelectPlan }) {
                 ))}
               </ul>
 
-              <PaymentButton
-                planName={plan.name}
-                amount={plan.price}
-                onSuccess={(updatedPlan) =>
-                  handlePaymentSuccess(plan, updatedPlan)
-                }
-              />
+              <button
+                onClick={() => handleDirectActivate(plan)}
+                disabled={loadingPlan === plan.id}
+                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/10 text-xs uppercase tracking-wider disabled:opacity-50"
+              >
+                <CheckCircle className="w-4 h-4" />
+                {loadingPlan === plan.id ? 'Activating...' : `Activate ${plan.name}`}
+              </button>
             </div>
           ))}
         </div>

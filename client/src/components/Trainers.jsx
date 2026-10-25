@@ -1,14 +1,24 @@
-import React, { useState } from 'react';
-import { X, Award, CheckCircle2, Star, Calendar, LoaderCircle } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+import React, { useState } from 'react';
+import {
+  X,
+  Award,
+  CheckCircle2,
+  Star,
+  Calendar,
+  LoaderCircle,
+} from 'lucide-react';
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const trainers = [
   {
     name: 'Marcus Vance',
     role: 'Head Strength & Conditioning',
     experience: '8+ Years Exp.',
-    image: 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?auto=format&fit=crop&q=80&w=600',
+    image:
+      'https://images.unsplash.com/photo-1567013127542-490d757e51fc?auto=format&fit=crop&q=80&w=600',
     certifications: ['CSCS Certified', 'Olympic Lifting'],
     bio: 'Marcus has trained elite athletes and bodybuilders for over 8 years. He specializes in strength progression, powerlifting, and hypertrophy.',
     specialties: ['Powerlifting', 'Hypertrophy', 'Injury Prevention'],
@@ -18,7 +28,8 @@ const trainers = [
     name: 'Elena Rostova',
     role: 'HIIT & Mobility Specialist',
     experience: '6+ Years Exp.',
-    image: 'https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=600',
+    image:
+      'https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&q=80&w=600',
     certifications: ['CrossFit L2', 'Yoga Alliance RYT-500'],
     bio: 'Elena blends explosive cardiovascular conditioning with joint mobility routines to ensure fat loss while maintaining joint longevity.',
     specialties: ['HIIT Training', 'Mobility & Stretching', 'Fat Loss'],
@@ -28,7 +39,8 @@ const trainers = [
     name: 'David Miller',
     role: 'Bodybuilding & Powerlifting Coach',
     experience: '10+ Years Exp.',
-    image: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&q=80&w=600',
+    image:
+      'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&q=80&w=600',
     certifications: ['NASM CPT', 'Precision Nutrition L2'],
     bio: 'David combines science-backed strength programming with macro nutrition strategy to help members maximize muscle gains.',
     specialties: ['Contest Prep', 'Strength Mechanics', 'Nutrition Coaching'],
@@ -38,7 +50,8 @@ const trainers = [
     name: 'Sophia Chen',
     role: 'Pilates & Functional Movement',
     experience: '5+ Years Exp.',
-    image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&q=80&w=600',
+    image:
+      'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&q=80&w=600',
     certifications: ['ACE Certified', 'Pilates Master Trainer'],
     bio: 'Sophia focuses on core alignment, posture correction, and body awareness through low-impact Pilates and functional movement.',
     specialties: ['Mat & Reformer Pilates', 'Core Stability', 'Postural Realignment'],
@@ -48,7 +61,8 @@ const trainers = [
     name: 'Vikram Singh',
     role: 'Fat Loss & Endurance Coach',
     experience: '7+ Years Exp.',
-    image: 'https://images.unsplash.com/photo-1534367507873-d2d7e24c797f?auto=format&fit=crop&q=80&w=600',
+    image:
+      'https://images.unsplash.com/photo-1534367507873-d2d7e24c797f?auto=format&fit=crop&q=80&w=600',
     certifications: ['ISSA Strength Coach', 'TRX Specialist'],
     bio: 'Vikram specializes in body re-composition, metabolic conditioning, and endurance development through high-intensity circuit training.',
     specialties: ['TRX Suspension', 'Metabolic Conditioning', 'Calisthenics'],
@@ -58,7 +72,8 @@ const trainers = [
     name: 'Aaliyah Khan',
     role: 'Boxing & Athletic Conditioning',
     experience: '9+ Years Exp.',
-    image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&q=80&w=600',
+    image:
+      'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&q=80&w=600',
     certifications: ['USA Boxing Coach', 'Kettlebell L2'],
     bio: 'Aaliyah brings intense combat-sports conditioning, quick footwork drills, and kettlebell movements to build explosive speed.',
     specialties: ['Boxing Footwork', 'Heavy Bag Drills', 'Explosive Power'],
@@ -82,67 +97,120 @@ export default function Trainers() {
     setBookingStatus('');
   };
 
+  // Book consultation with the selected trainer.
   const handleBookConsultation = async (trainer) => {
-    if (!trainer || isBooking) return;
-
     const token = localStorage.getItem('titanfit_token');
+
     if (!token) {
-      setBookingStatus('Please log in to book a consultation.');
+      setBookingStatus(
+        'error: Consultation book karne ke liye pehle login karein.'
+      );
       return;
     }
 
     setIsBooking(true);
     setBookingStatus('');
 
+    let storedUser = {};
+
     try {
-      const res = await fetch(`${API_BASE_URL}/api/trainers/book-consultation`, {
+      storedUser = JSON.parse(
+        localStorage.getItem('titanfit_user') || '{}'
+      );
+    } catch (err) {
+      console.error('User parse error:', err);
+    }
+
+    // Local date in YYYY-MM-DD format.
+    const now = new Date();
+    const todayDate = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-');
+
+    try {
+      const trainerId = trainer.id || trainer._id;
+
+      const payload = {
+        fullName:
+          storedUser.name ||
+          storedUser.fullName ||
+          'TitanFit Member',
+        email: storedUser.email || 'member@titanfit.com',
+        phone:
+          storedUser.phoneNumber ||
+          storedUser.phone ||
+          '9999999999',
+        plan: `Consultation with ${trainer.name}`,
+        preferredDate: todayDate,
+        preferredTime: 'Morning (08:00 AM)',
+        fitnessGoal:
+          trainer.role || 'Fat Loss & Endurance Training',
+        ...(trainerId ? { trainerId } : {}),
+      };
+
+      const res = await fetch(`${API_BASE_URL}/api/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        // These trainer cards are currently static and have no MongoDB _id.
-        // The backend must accept trainerName when trainerId is null, or the
-        // frontend should load trainers from the database and pass their _id.
-        body: JSON.stringify({
-          trainerId: trainer._id || trainer.id || null,
-          trainerName: trainer.name,
-        }),
+        body: JSON.stringify(payload),
       });
 
-      const data = await res.json().catch(() => ({}));
+      let data = {};
 
-      if (!res.ok || !data.success) {
-        setBookingStatus(data.message || 'Could not book the consultation. Please try again.');
-        return;
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
       }
 
+      if (res.ok && data.success) {
+        setBookingStatus(
+          `success: 🎉 Consultation request for ${trainer.name} submitted!`
+        );
+      } else {
+        setBookingStatus(
+          `error: ${
+            data.message || 'Consultation book nahi ho paya.'
+          }`
+        );
+      }
+    } catch (err) {
+      console.error('Booking Error:', err);
       setBookingStatus(
-        data.message || `Consultation requested with ${trainer.name}! We will reach out shortly.`
+        'error: Server connection error. Check backend terminal.'
       );
-    } catch (error) {
-      console.error('Booking consultation failed:', error);
-      setBookingStatus('Unable to connect to the server. Please try again later.');
     } finally {
       setIsBooking(false);
     }
   };
 
   return (
-    <section id="trainers" className="relative bg-slate-900/40 py-20">
+    <section
+      id="trainers"
+      className="relative bg-slate-900/40 py-20"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Section heading */}
         <div className="mx-auto mb-16 max-w-2xl text-center">
           <h2 className="mb-2 text-sm font-bold uppercase tracking-widest text-amber-500">
             Expert Coaches
           </h2>
+
           <h3 className="text-3xl font-extrabold text-white sm:text-4xl">
             Train With The Very Best
           </h3>
+
           <p className="mt-2 text-sm text-slate-400 sm:text-base">
-            Click on any coach to view their full profile, bio, and specialization details.
+            Click on any coach to view their full profile, bio, and
+            specialization details.
           </p>
         </div>
 
+        {/* Trainer cards */}
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {trainers.map((trainer) => (
             <button
@@ -159,6 +227,7 @@ export default function Trainers() {
                   loading="lazy"
                   className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                 />
+
                 <span className="absolute bottom-3 right-3 rounded-full border border-amber-500/20 bg-slate-950/80 px-3 py-1 text-xs font-semibold text-amber-400 backdrop-blur-md">
                   {trainer.experience}
                 </span>
@@ -169,10 +238,17 @@ export default function Trainers() {
                   <h4 className="mb-1 text-xl font-bold text-white transition-colors group-hover:text-amber-500">
                     {trainer.name}
                   </h4>
-                  <p className="mb-4 text-sm font-medium text-amber-500">{trainer.role}</p>
+
+                  <p className="mb-4 text-sm font-medium text-amber-500">
+                    {trainer.role}
+                  </p>
                 </div>
+
                 <div className="border-t border-slate-800/80 pt-4">
-                  <p className="mb-2 text-xs font-medium text-slate-400">Certifications:</p>
+                  <p className="mb-2 text-xs font-medium text-slate-400">
+                    Certifications:
+                  </p>
+
                   <div className="flex flex-wrap gap-1.5">
                     {trainer.certifications.map((cert) => (
                       <span
@@ -190,11 +266,14 @@ export default function Trainers() {
         </div>
       </div>
 
+      {/* Trainer details modal */}
       {selectedTrainer && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeTrainer();
+            if (event.target === event.currentTarget) {
+              closeTrainer();
+            }
           }}
         >
           <div
@@ -203,6 +282,7 @@ export default function Trainers() {
             aria-labelledby="trainer-modal-title"
             className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 text-slate-100 shadow-2xl"
           >
+            {/* Close button */}
             <button
               type="button"
               onClick={closeTrainer}
@@ -213,20 +293,30 @@ export default function Trainers() {
               <X className="h-5 w-5" />
             </button>
 
+            {/* Trainer image and details */}
             <div className="relative h-56 sm:h-64">
               <img
                 src={selectedTrainer.image}
                 alt={selectedTrainer.name}
                 className="h-full w-full object-cover object-top"
               />
+
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+
               <div className="absolute bottom-4 left-6 right-6 flex items-end justify-between gap-3">
                 <div>
-                  <h3 id="trainer-modal-title" className="text-2xl font-bold text-white">
+                  <h3
+                    id="trainer-modal-title"
+                    className="text-2xl font-bold text-white"
+                  >
                     {selectedTrainer.name}
                   </h3>
-                  <p className="text-xs font-medium text-amber-500">{selectedTrainer.role}</p>
+
+                  <p className="text-xs font-medium text-amber-500">
+                    {selectedTrainer.role}
+                  </p>
                 </div>
+
                 <div className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-400">
                   <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
                   {selectedTrainer.rating}
@@ -234,20 +324,25 @@ export default function Trainers() {
               </div>
             </div>
 
+            {/* Modal content */}
             <div className="max-h-[60vh] space-y-4 overflow-y-auto p-6">
+              {/* Biography */}
               <div>
                 <h4 className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-400">
                   About Coach
                 </h4>
+
                 <p className="rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs leading-relaxed text-slate-300">
                   {selectedTrainer.bio}
                 </p>
               </div>
 
+              {/* Specialties */}
               <div>
                 <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
                   Key Specialties
                 </h4>
+
                 <div className="flex flex-wrap gap-2">
                   {selectedTrainer.specialties.map((specialty) => (
                     <span
@@ -261,10 +356,12 @@ export default function Trainers() {
                 </div>
               </div>
 
+              {/* Certifications */}
               <div>
                 <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
                   Certifications
                 </h4>
+
                 <div className="flex flex-wrap gap-2">
                   {selectedTrainer.certifications.map((certification) => (
                     <span
@@ -278,6 +375,7 @@ export default function Trainers() {
                 </div>
               </div>
 
+              {/* Booking action */}
               <div className="pt-2">
                 <button
                   type="button"
@@ -293,18 +391,24 @@ export default function Trainers() {
                   ) : (
                     <>
                       <Calendar className="h-4 w-4" />
-                      Book Consultation with {selectedTrainer.name.split(' ')[0]}
+                      Book Consultation with{' '}
+                      {selectedTrainer.name.split(' ')[0]}
                     </>
                   )}
                 </button>
 
+                {/* Success and error messages */}
                 {bookingStatus && (
                   <p
                     role="status"
                     aria-live="polite"
-                    className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300"
+                    className={`mt-3 rounded-xl border p-3 text-sm ${
+                      bookingStatus.startsWith('success:')
+                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                        : 'border-red-500/30 bg-red-500/10 text-red-300'
+                    }`}
                   >
-                    {bookingStatus}
+                    {bookingStatus.replace(/^(success|error):\s*/, '')}
                   </p>
                 )}
               </div>

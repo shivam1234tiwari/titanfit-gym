@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { QRCodeSVG } from "qrcode.react";
+// import { QRCodeSVG } from "qrcode.react";
 
 import {
   User,
@@ -676,7 +676,7 @@ export default function UserProfile({ onClose, onLogout }) {
             </p>
           </section>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center flex flex-col items-center shadow-xl">
+          {/* <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center flex flex-col items-center shadow-xl">
             <h4 className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-3">
               Digital Gym Pass (QR Code)
             </h4>
@@ -690,7 +690,7 @@ export default function UserProfile({ onClose, onLogout }) {
             <p className="text-[11px] text-slate-400 mt-3">
               Scan this QR code at the reception desk for daily check-in.
             </p>
-          </div>
+          </div> */}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
