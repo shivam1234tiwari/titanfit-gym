@@ -1,0 +1,64 @@
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+const User = require('../models/User');
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_YourKeyHere',
+  key_secret: process.env.RAZORPAY_KEY_SECRET || 'YourSecretHere',
+});
+
+// Create Order API
+exports.createOrder = async (req, res) => {
+  try {
+    const { amount, planName } = req.body;
+
+    const options = {
+      amount: Number(amount) * 100, // Amount in paise
+      currency: 'INR',
+      receipt: `receipt_${Date.now()}`,
+    };
+
+    const order = await razorpay.orders.create(options);
+
+    res.status(200).json({
+      success: true,
+      order,
+      planName,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Verify Payment & Activate Plan
+exports.verifyPayment = async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planName } = req.body;
+
+    const body = razorpay_order_id + '|' + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || 'YourSecretHere')
+      .update(body.toString())
+      .digest('hex');
+
+    if (expectedSignature === razorpay_signature) {
+      // Payment Verified! Update user plan in DB
+      const user = await User.findById(req.user.id);
+      if (user) {
+        user.activePlan = planName;
+        user.membershipPlan = planName;
+        await user.save();
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Payment verified & plan activated successfully!',
+        activePlan: planName,
+      });
+    } else {
+      return res.status(400).json({ success: false, message: 'Invalid payment signature' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

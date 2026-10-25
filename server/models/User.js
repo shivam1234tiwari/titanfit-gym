@@ -19,7 +19,13 @@ const userSchema = new mongoose.Schema({
     enum: ['Weight Loss', 'Muscle Gain', 'Maintenance'], 
     default: 'Maintenance' 
   },
-  membershipPlan: { type: String, default: 'Free Trial' }
+  membershipPlan: { type: String, default: 'Free Trial' },
+  attendanceLogs: [
+    {
+      checkInTime: { type: Date, default: Date.now },
+      verifiedBy: { type: String, default: 'Admin Desk' }
+    }
+  ]
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
