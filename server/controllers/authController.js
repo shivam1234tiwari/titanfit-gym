@@ -484,14 +484,13 @@ exports.updateMemberByAdmin = async (req, res) => {
    ========================================================================== */
 
 /**
- * @desc Get all registered members with populated assigned trainers for Admin
+ * @desc Get all registered members for Admin
  * @route GET /api/admin/users
  */
 exports.getAllUsers = async (req, res) => {
   try {
     let usersQuery = User.find({}).select('-password').sort({ createdAt: -1 });
 
-    // Safely attempt populate
     try {
       usersQuery = usersQuery.populate('assignedTrainer');
     } catch (popErr) {

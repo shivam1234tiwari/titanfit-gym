@@ -1,4 +1,3 @@
-// server/models/User.js
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
@@ -22,7 +21,7 @@ const userSchema = new mongoose.Schema({
   },
   membershipPlan: { type: String, default: 'Free Trial' },
 
-  // ADD THIS FIELD TO PREVENT POPULATE CRASH
+  // ADD THIS REFERENCE TO FIX THE 500 POPULATE CRASH
   assignedTrainer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Trainer',
