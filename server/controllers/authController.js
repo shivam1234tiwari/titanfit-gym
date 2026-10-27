@@ -489,10 +489,16 @@ exports.updateMemberByAdmin = async (req, res) => {
  */
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({})
-      .select('-password')
-      .populate('assignedTrainer')
-      .sort({ createdAt: -1 });
+    let usersQuery = User.find({}).select('-password').sort({ createdAt: -1 });
+
+    // Safely attempt populate
+    try {
+      usersQuery = usersQuery.populate('assignedTrainer');
+    } catch (popErr) {
+      console.warn('Skipping assignedTrainer populate:', popErr.message);
+    }
+
+    const users = await usersQuery;
 
     return res.status(200).json({
       success: true,

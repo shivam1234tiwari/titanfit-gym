@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Award, Star, CheckCircle2, X, Calendar, Sparkles } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 const FALLBACK_TRAINERS = [
@@ -43,6 +44,7 @@ const FALLBACK_TRAINERS = [
 export default function Trainers() {
   const [trainers, setTrainers] = useState(FALLBACK_TRAINERS);
   const [loading, setLoading] = useState(false);
+  const [selectedTrainer, setSelectedTrainer] = useState(null);
 
   useEffect(() => {
     const fetchTrainers = async () => {
@@ -64,6 +66,23 @@ export default function Trainers() {
     fetchTrainers();
   }, []);
 
+  // Modal key bindings & body scroll lock
+  useEffect(() => {
+    if (!selectedTrainer) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setSelectedTrainer(null);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [selectedTrainer]);
+
   return (
     <section id="trainers" className="bg-slate-950 py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -75,7 +94,7 @@ export default function Trainers() {
             Train With The Very Best
           </h3>
           <p className="mt-2 text-sm text-slate-400">
-            Click on any coach to view their full profile, bio, and specialization details.
+            Click on any coach card to view their full bio, certifications, and booking options.
           </p>
         </div>
 
@@ -88,25 +107,37 @@ export default function Trainers() {
             {trainers.map((trainer) => (
               <div
                 key={trainer._id || trainer.id}
-                className="bg-slate-900/60 border border-slate-800/80 rounded-2xl overflow-hidden hover:border-amber-500/50 transition-all flex flex-col"
+                onClick={() => setSelectedTrainer(trainer)}
+                className="group cursor-pointer bg-slate-900/60 border border-slate-800/80 rounded-2xl overflow-hidden hover:border-amber-500/60 hover:-translate-y-1 transition-all duration-300 flex flex-col shadow-lg hover:shadow-amber-500/10"
               >
-                <img
-                  src={trainer.image}
-                  alt={trainer.name}
-                  className="w-full h-64 object-cover object-top"
-                />
+                <div className="relative overflow-hidden">
+                  <img
+                    src={trainer.image}
+                    alt={trainer.name}
+                    className="w-full h-64 object-cover object-top transition duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex items-end p-4">
+                    <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5" /> View Full Profile
+                    </span>
+                  </div>
+                </div>
+
                 <div className="p-6 flex-1 flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <h4 className="text-xl font-bold text-white">{trainer.name}</h4>
-                      <span className="text-amber-400 font-extrabold text-xs">
-                        ★ {trainer.rating || '4.9'}
+                      <h4 className="text-xl font-bold text-white group-hover:text-amber-400 transition">
+                        {trainer.name}
+                      </h4>
+                      <span className="text-amber-400 font-extrabold text-xs flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 fill-amber-400" /> {trainer.rating || '4.9'}
                       </span>
                     </div>
                     <p className="text-xs font-bold text-amber-500 mb-3">{trainer.role}</p>
                     <p className="text-slate-400 text-xs mb-4 line-clamp-3">{trainer.about}</p>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-800">
+
+                  <div className="flex flex-wrap gap-1.5 pt-3 border-t border-slate-800">
                     {(trainer.specialties || []).map((spec, idx) => (
                       <span
                         key={idx}
@@ -122,6 +153,98 @@ export default function Trainers() {
           </div>
         )}
       </div>
+
+      {/* Trainer Detail Modal */}
+      {selectedTrainer && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setSelectedTrainer(null);
+          }}
+        >
+          <div className="relative my-auto w-full max-w-xl overflow-hidden rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl">
+            {/* Modal Header Banner */}
+            <div className="relative h-48 sm:h-56">
+              <img
+                src={selectedTrainer.image}
+                alt={selectedTrainer.name}
+                className="w-full h-full object-cover object-top"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+
+              <button
+                type="button"
+                onClick={() => setSelectedTrainer(null)}
+                className="absolute right-4 top-4 rounded-xl border border-slate-700 bg-slate-950/70 p-2 text-slate-300 hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="absolute bottom-4 left-6 right-6">
+                <span className="text-xs font-extrabold text-amber-400 uppercase tracking-widest bg-slate-950/80 px-2.5 py-1 rounded-full border border-amber-500/30">
+                  {selectedTrainer.role}
+                </span>
+                <h3 className="text-2xl font-black text-white mt-1">
+                  {selectedTrainer.name}
+                </h3>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5 text-xs text-slate-300">
+              <div className="grid grid-cols-2 gap-3 text-center">
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
+                  <p className="text-[10px] text-slate-500 uppercase font-bold">Experience</p>
+                  <p className="text-sm font-bold text-white mt-0.5">
+                    {selectedTrainer.experienceYears || '5+'} Years
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
+                  <p className="text-[10px] text-slate-500 uppercase font-bold">Rating</p>
+                  <p className="text-sm font-bold text-amber-400 mt-0.5 flex items-center justify-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-amber-400" /> {selectedTrainer.rating || '4.9'}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-white mb-1">About Coach</h4>
+                <p className="leading-5 text-slate-400">{selectedTrainer.about}</p>
+              </div>
+
+              {selectedTrainer.certifications && selectedTrainer.certifications.length > 0 && (
+                <div>
+                  <h4 className="font-bold text-white mb-2 flex items-center gap-1.5">
+                    <Award className="w-4 h-4 text-amber-500" /> Certifications
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTrainer.certifications.map((cert, idx) => (
+                      <span
+                        key={idx}
+                        className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1 text-slate-300"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        {cert}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="pt-2 border-t border-slate-800 flex gap-3">
+                <a
+                  href="#contact"
+                  onClick={() => setSelectedTrainer(null)}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-3 text-xs font-extrabold text-slate-950 hover:bg-amber-400 transition"
+                >
+                  <Calendar className="w-4 h-4" /> Book Consultation
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

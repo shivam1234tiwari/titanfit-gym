@@ -1,3 +1,4 @@
+// server/models/User.js
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
@@ -20,6 +21,14 @@ const userSchema = new mongoose.Schema({
     default: 'Maintenance' 
   },
   membershipPlan: { type: String, default: 'Free Trial' },
+
+  // ADD THIS FIELD TO PREVENT POPULATE CRASH
+  assignedTrainer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Trainer',
+    default: null
+  },
+
   attendanceLogs: [
     {
       checkInTime: { type: Date, default: Date.now },
@@ -27,16 +36,16 @@ const userSchema = new mongoose.Schema({
     }
   ],
   enrolledPrograms: [
-  {
-    programId: String,
-    programTitle: String,
-    category: String,
-    enrolledAt: {
-      type: Date,
-      default: Date.now
+    {
+      programId: String,
+      programTitle: String,
+      category: String,
+      enrolledAt: {
+        type: Date,
+        default: Date.now
+      }
     }
-  }
-]
+  ]
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

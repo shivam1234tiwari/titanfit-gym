@@ -18,6 +18,7 @@ import {
   Award,
   ArrowRight,
   Trash2,
+  Dumbbell,
 } from "lucide-react";
 
 import { API_BASE_URL } from "../config";
@@ -84,6 +85,7 @@ export default function UserProfile({ onClose, onLogout }) {
     activePlan: "",
     membershipPlan: "",
     assignedTrainer: null,
+    enrolledPrograms: [],
   });
 
   const [dietPlan, setDietPlan] = useState(null);
@@ -130,6 +132,7 @@ export default function UserProfile({ onClose, onLogout }) {
         previous.activePlan ||
         "",
       assignedTrainer: user.assignedTrainer || previous.assignedTrainer || null,
+      enrolledPrograms: user.enrolledPrograms || previous.enrolledPrograms || [],
     }));
 
     if (nextDietPlan !== undefined) {
@@ -772,6 +775,46 @@ export default function UserProfile({ onClose, onLogout }) {
             </div>
           </section>
         </div>
+
+        {/* Enrolled Programs Section */}
+        {profile.enrolledPrograms && profile.enrolledPrograms.length > 0 && (
+          <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+                <Dumbbell className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white">
+                  Active Enrolled Programs
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Programs joined from TitanFit library
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {profile.enrolledPrograms.map((prog, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between bg-slate-950 border border-slate-800/80 rounded-xl p-4"
+                >
+                  <div>
+                    <h4 className="text-xs font-bold text-white">
+                      {prog.programTitle}
+                    </h4>
+                    <span className="text-[10px] text-amber-500 font-bold uppercase mt-0.5 block">
+                      {prog.category}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    {new Date(prog.enrolledAt).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Edit profile and diet plan */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
