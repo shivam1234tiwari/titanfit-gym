@@ -246,7 +246,9 @@ const generateDietPlan = (goal) => {
  */
 exports.getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findById(req.user.id)
+      .select('-password')
+      .populate('assignedTrainer');
 
     if (!user) {
       return res.status(404).json({
@@ -430,7 +432,8 @@ exports.getAllMembers = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      users: members
+      users: members,
+      data: members
     });
   } catch (error) {
     console.error('Get Members Error:', error);
@@ -484,7 +487,7 @@ exports.updateMemberByAdmin = async (req, res) => {
    ========================================================================== */
 
 /**
- * @desc Get all registered members for Admin
+ * @desc Get all registered members with populated assigned trainers for Admin
  * @route GET /api/admin/users
  */
 exports.getAllUsers = async (req, res) => {
@@ -501,7 +504,9 @@ exports.getAllUsers = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: users
+      users: users,
+      data: users,
+      members: users
     });
   } catch (error) {
     console.error('Admin Get Users Error:', error);
