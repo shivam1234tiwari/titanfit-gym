@@ -1,4 +1,3 @@
-
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
@@ -13,6 +12,7 @@ import {
   Filter,
   LogOut,
   Mail,
+  MessageSquare,
   Phone,
   PieChart as PieChartIcon,
   RefreshCw,
@@ -272,6 +272,7 @@ function StatCard({ title, value, subtitle, icon: Icon, color }) {
 
 export default function AdminDashboard() {
   const [members, setMembers] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [planFilter, setPlanFilter] = useState("All Plans");
   const [sortBy, setSortBy] = useState("newest");
@@ -283,7 +284,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState(null);
 
-  const fetchMembers = useCallback(async (manual = false) => {
+  const fetchDashboardData = useCallback(async (manual = false) => {
     const token = getToken();
 
     if (!token) {
@@ -300,7 +301,8 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+      // 1. Fetch Members
+      const userRes = await fetch(`${API_BASE_URL}/api/admin/users`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -308,37 +310,47 @@ export default function AdminDashboard() {
         },
       });
 
-      if (response.status === 401 || response.status === 403) {
-        throw new Error(
-          "Access denied. Your session may have expired or you may not have admin access."
-        );
+      if (userRes.status === 401 || userRes.status === 403) {
+        throw new Error("Access denied. Admin session expired.");
       }
 
-      if (!response.ok) {
-        throw new Error(`Unable to load members (HTTP ${response.status}).`);
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        const users = Array.isArray(userData)
+          ? userData
+          : Array.isArray(userData.users)
+            ? userData.users
+            : Array.isArray(userData.data)
+              ? userData.data
+              : Array.isArray(userData.members)
+                ? userData.members
+                : [];
+        setMembers(users);
       }
 
-      const data = await response.json();
+      // 2. Fetch Contact Messages
+      const msgRes = await fetch(`${API_BASE_URL}/api/admin/messages`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-      const users = Array.isArray(data)
-        ? data
-        : Array.isArray(data.users)
-          ? data.users
-          : Array.isArray(data.members)
-            ? data.members
-            : null;
-
-      if (!users) {
-        throw new Error(
-          "Unexpected API response. Expected an array of users or a users/members array."
-        );
+      if (msgRes.ok) {
+        const msgData = await msgRes.json();
+        const msgs = Array.isArray(msgData.messages)
+          ? msgData.messages
+          : Array.isArray(msgData.data)
+            ? msgData.data
+            : [];
+        setMessages(msgs);
       }
 
-      setMembers(users);
       setLastUpdated(new Date());
       setError("");
     } catch (err) {
-      setError(err.message || "Something went wrong while loading members.");
+      setError(err.message || "Something went wrong loading dashboard data.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -346,29 +358,14 @@ export default function AdminDashboard() {
   }, [members.length]);
 
   useEffect(() => {
-    fetchMembers();
+    fetchDashboardData();
 
     const interval = window.setInterval(() => {
-      fetchMembers();
+      fetchDashboardData();
     }, AUTO_REFRESH_MS);
 
-    const handleMembershipUpdate = () => {
-      fetchMembers();
-    };
-
-    window.addEventListener(
-      "titanfit:membership-updated",
-      handleMembershipUpdate
-    );
-
-    return () => {
-      window.clearInterval(interval);
-      window.removeEventListener(
-        "titanfit:membership-updated",
-        handleMembershipUpdate
-      );
-    };
-  }, [fetchMembers]);
+    return () => window.clearInterval(interval);
+  }, [fetchDashboardData]);
 
   const recentSignups = useMemo(() => {
     const cutoff = new Date();
@@ -376,9 +373,7 @@ export default function AdminDashboard() {
 
     return members.filter((member) => {
       if (!member.createdAt) return false;
-
       const joined = new Date(member.createdAt);
-
       return !Number.isNaN(joined.getTime()) && joined >= cutoff;
     }).length;
   }, [members]);
@@ -411,15 +406,12 @@ export default function AdminDashboard() {
       if (sortBy === "name") {
         return String(a.name || "").localeCompare(String(b.name || ""));
       }
-
       if (sortBy === "oldest") {
         return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
       }
-
       if (sortBy === "plan") {
         return getMemberPlan(a).localeCompare(getMemberPlan(b));
       }
-
       return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     });
   }, [members, searchTerm, planFilter, sortBy]);
@@ -428,22 +420,15 @@ export default function AdminDashboard() {
     setCurrentPage(1);
   }, [searchTerm, planFilter, sortBy]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredMembers.length / PAGE_SIZE)
-  );
-
+  const totalPages = Math.max(1, Math.ceil(filteredMembers.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
-
   const paginatedMembers = filteredMembers.slice(
     (safePage - 1) * PAGE_SIZE,
     safePage * PAGE_SIZE
   );
 
   const exportMembersCsv = () => {
-    const escapeCsv = (value) =>
-      `"${String(value ?? "").replace(/"/g, '""')}"`;
-
+    const escapeCsv = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
     const headers = [
       "Name",
       "Email",
@@ -468,20 +453,14 @@ export default function AdminDashboard() {
       .map((row) => row.map(escapeCsv).join(","))
       .join("\r\n");
 
-    const blob = new Blob(["\uFEFF", csv], {
-      type: "text/csv;charset=utf-8;",
-    });
-
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-
     link.href = url;
     link.download = "titanfit-members.csv";
-
     document.body.appendChild(link);
     link.click();
     link.remove();
-
     URL.revokeObjectURL(url);
   };
 
@@ -553,7 +532,7 @@ export default function AdminDashboard() {
             </h2>
 
             <p className="mt-2 text-sm text-slate-400">
-              Monitor your gym members and membership activity.
+              Monitor your gym members, consultation inquiries, and activity.
             </p>
           </div>
 
@@ -567,7 +546,7 @@ export default function AdminDashboard() {
 
             <button
               type="button"
-              onClick={() => fetchMembers(true)}
+              onClick={() => fetchDashboardData(true)}
               disabled={refreshing}
               className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-black text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -586,15 +565,13 @@ export default function AdminDashboard() {
             className="flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300"
           >
             <X size={18} className="mt-0.5 shrink-0" />
-
             <div className="flex-1">
               <p className="font-semibold">Could not update dashboard</p>
               <p className="mt-1 text-xs">{error}</p>
             </div>
-
             <button
               type="button"
-              onClick={() => fetchMembers(true)}
+              onClick={() => fetchDashboardData(true)}
               className="text-xs font-bold underline"
             >
               Retry
@@ -606,7 +583,7 @@ export default function AdminDashboard() {
           <StatCard
             title="Registered Members"
             value={loading ? "..." : members.length}
-            subtitle="Total users returned by API"
+            subtitle="Total registered accounts"
             icon={Users}
             color="border-sky-500/20 bg-sky-500/10 text-sky-400"
           />
@@ -614,30 +591,31 @@ export default function AdminDashboard() {
           <StatCard
             title="Members With a Plan"
             value={loading ? "..." : membersWithPlan}
-            subtitle="Users assigned a membership plan"
+            subtitle="Assigned active membership"
             icon={CheckCircle2}
             color="border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
           />
 
           <StatCard
-            title="New Members (7 Days)"
-            value={loading ? "..." : recentSignups}
-            subtitle="Based on account creation date"
-            icon={CalendarDays}
-            color="border-violet-500/20 bg-violet-500/10 text-violet-400"
+            title="New Inquiries"
+            value={loading ? "..." : messages.length}
+            subtitle="Contact form submissions"
+            icon={MessageSquare}
+            color="border-amber-500/20 bg-amber-500/10 text-amber-400"
           />
 
           <StatCard
             title="Auto Refresh"
             value="30 sec"
-            subtitle="Periodic API refresh enabled"
+            subtitle="Periodic API sync active"
             icon={Clock}
-            color="border-amber-500/20 bg-amber-500/10 text-amber-400"
+            color="border-violet-500/20 bg-violet-500/10 text-violet-400"
           />
         </section>
 
         <MembershipPieChart members={members} />
 
+        {/* Member Directory */}
         <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
           <div className="flex flex-col justify-between gap-4 border-b border-slate-800 p-5 xl:flex-row xl:items-center">
             <div>
@@ -655,7 +633,6 @@ export default function AdminDashboard() {
                   size={15}
                   className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
                 />
-
                 <input
                   type="search"
                   value={searchTerm}
@@ -670,7 +647,6 @@ export default function AdminDashboard() {
                   size={14}
                   className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
                 />
-
                 <select
                   value={planFilter}
                   onChange={(event) => setPlanFilter(event.target.value)}
@@ -739,15 +715,9 @@ export default function AdminDashboard() {
                 ) : paginatedMembers.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-5 py-16 text-center">
-                      <Users
-                        size={28}
-                        className="mx-auto text-slate-600"
-                      />
+                      <Users size={28} className="mx-auto text-slate-600" />
                       <p className="mt-3 text-sm font-semibold text-slate-300">
                         No members found
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Try changing your search or filter.
                       </p>
                     </td>
                   </tr>
@@ -782,7 +752,6 @@ export default function AdminDashboard() {
                             <Mail size={13} className="shrink-0 text-slate-500" />
                             {member.email || "N/A"}
                           </div>
-
                           <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
                             <Phone size={13} className="shrink-0" />
                             {member.phoneNumber || member.phone || "N/A"}
@@ -828,71 +797,79 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </div>
+        </section>
 
-          <div className="flex flex-col justify-between gap-3 border-t border-slate-800 px-5 py-4 sm:flex-row sm:items-center">
-            <p className="text-[11px] text-slate-500">
-              Showing{" "}
-              {filteredMembers.length
-                ? (safePage - 1) * PAGE_SIZE + 1
-                : 0}
-              {"–"}
-              {Math.min(safePage * PAGE_SIZE, filteredMembers.length)}
-              {" of "}
-              {filteredMembers.length} matching members
-            </p>
-
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                disabled={safePage <= 1}
-                onClick={() =>
-                  setCurrentPage((page) => Math.max(1, page - 1))
-                }
-                className="flex items-center gap-1 rounded-lg border border-slate-800 px-3 py-2 text-xs text-slate-300 transition hover:border-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <ChevronLeft size={15} />
-                Previous
-              </button>
-
-              <span className="text-xs tabular-nums text-slate-400">
-                Page {safePage} of {totalPages}
-              </span>
-
-              <button
-                type="button"
-                disabled={safePage >= totalPages}
-                onClick={() =>
-                  setCurrentPage((page) => Math.min(totalPages, page + 1))
-                }
-                className="flex items-center gap-1 rounded-lg border border-slate-800 px-3 py-2 text-xs text-slate-300 transition hover:border-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Next
-                <ChevronRight size={15} />
-              </button>
+        {/* Consultation Inquiries Section */}
+        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-xl">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-amber-500" />
+                Consultation & Contact Inquiries
+              </h2>
+              <p className="mt-1 text-xs text-slate-400">
+                Messages submitted via the Contact Us form
+              </p>
             </div>
+            <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+              {messages.length} Inquiry{messages.length === 1 ? "" : "s"}
+            </span>
           </div>
+
+          {messages.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-800 p-8 text-center text-slate-500 text-xs">
+              No consultation messages received yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {messages.map((msg, idx) => (
+                <div
+                  key={msg._id || idx}
+                  className="bg-slate-950 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between space-y-3"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-sm font-bold text-white">{msg.name}</h4>
+                      <p className="text-xs text-amber-500 mt-0.5">
+                        {msg.email} {msg.phoneNumber ? `• ${msg.phoneNumber}` : ""}
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      {formatDate(msg.createdAt, true)}
+                    </span>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-800/80">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+                      Subject: {msg.subject || "General Inquiry"}
+                    </span>
+                    <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-3 rounded-lg border border-slate-800/60">
+                      "{msg.message}"
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         <footer className="flex flex-col justify-between gap-2 pb-4 text-[11px] text-slate-500 sm:flex-row">
           <p>TitanFit Admin Dashboard</p>
           <p>
-            <span className="text-emerald-400">●</span>{" "}
-            Refresh interval: 30 seconds
+            <span className="text-emerald-400">●</span> Refresh interval: 30 seconds
             {lastUpdated && ` · Last sync: ${lastUpdated.toLocaleTimeString()}`}
           </p>
         </footer>
       </main>
 
+      {/* Member Detail Modal */}
       {selectedMember && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="member-detail-title"
           onClick={(event) => {
-            if (event.target === event.currentTarget) {
-              setSelectedMember(null);
-            }
+            if (event.target === event.currentTarget) setSelectedMember(null);
           }}
         >
           <section className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
@@ -901,14 +878,9 @@ export default function AdminDashboard() {
                 <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
                   Member Profile
                 </p>
-
-                <h3
-                  id="member-detail-title"
-                  className="mt-1 text-xl font-black text-white"
-                >
+                <h3 className="mt-1 text-xl font-black text-white">
                   {selectedMember.name || "Unnamed Member"}
                 </h3>
-
                 <p className="mt-1 text-xs text-slate-400">
                   {selectedMember.email || "No email provided"}
                 </p>
@@ -917,7 +889,6 @@ export default function AdminDashboard() {
               <button
                 type="button"
                 onClick={() => setSelectedMember(null)}
-                aria-label="Close member profile"
                 className="rounded-lg border border-slate-700 p-2 text-slate-400 transition hover:text-white"
               >
                 <X size={17} />
@@ -946,10 +917,7 @@ export default function AdminDashboard() {
                     : "Not provided",
                 ],
                 ["Joined", formatDate(selectedMember.createdAt, true)],
-                [
-                  "Account ID",
-                  getMemberId(selectedMember) || "Not provided",
-                ],
+                ["Account ID", getMemberId(selectedMember) || "Not provided"],
               ].map(([label, value]) => (
                 <div
                   key={label}

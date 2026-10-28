@@ -2,11 +2,12 @@ const mongoose = require('mongoose');
 
 const contactSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    email: { type: String, required: true },
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, trim: true },
+    phoneNumber: { type: String, default: '' },
+    subject: { type: String, default: 'General Consultation' },
     message: { type: String, required: true },
-    replyMessage: { type: String, default: '' }, // 👈 Admin ka reply
-    status: { type: String, enum: ['New', 'Replied'], default: 'New' } // 👈 Status
+    status: { type: String, enum: ['Pending', 'Replied'], default: 'Pending' }
   },
   { timestamps: true }
 );
