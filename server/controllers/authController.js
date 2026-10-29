@@ -133,6 +133,7 @@ exports.registerUser = async (req, res) => {
       token: generateToken(user._id, user.role || 'member'),
       user: {
         id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         phoneNumber: user.phoneNumber,
@@ -167,6 +168,7 @@ exports.loginUser = async (req, res) => {
 
     if (!user) {
       return res.status(401).json({
+        success: false,
         message: 'Invalid email or password'
       });
     }
@@ -178,6 +180,7 @@ exports.loginUser = async (req, res) => {
 
     if (!isMatch) {
       return res.status(401).json({
+        success: false,
         message: 'Invalid email or password'
       });
     }
@@ -188,8 +191,10 @@ exports.loginUser = async (req, res) => {
     );
 
     return res.status(200).json({
+      success: true,
       token,
       user: {
+        id: user._id,
         _id: user._id,
         name: user.name,
         email: user.email,
@@ -204,6 +209,7 @@ exports.loginUser = async (req, res) => {
     console.error('Login Error:', error);
 
     return res.status(500).json({
+      success: false,
       message: 'Server error during login',
       error: error.message
     });
@@ -685,7 +691,12 @@ exports.sendOtp = async (req, res) => {
     const result = await sendOtpEmail(user.email, user.name, generatedOtp);
 
     if (!result.success) {
-      return res.status(500).json({ success: false, message: 'Failed to deliver OTP email.' });
+      console.error('Resend Delivery Internal Failure:', result.error);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to deliver OTP email. Check Resend configuration.',
+        details: result.error
+      });
     }
 
     return res.status(200).json({
@@ -693,7 +704,7 @@ exports.sendOtp = async (req, res) => {
       message: 'OTP has been sent successfully to your email!'
     });
   } catch (error) {
-    console.error('Send OTP Error:', error);
+    console.error('Send OTP Critical Error:', error);
     return res.status(500).json({ success: false, message: error.message });
   }
 };

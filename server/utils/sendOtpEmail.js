@@ -1,34 +1,37 @@
 const { Resend } = require('resend');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const sendOtpEmail = async (email, name, otp) => {
   try {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      return { success: false, error: 'RESEND_API_KEY is not defined in environment variables' };
+    }
+
+    const resend = new Resend(apiKey);
+
     const { data, error } = await resend.emails.send({
-      from: 'TitanFit Gym <onboarding@resend.dev>', // Free tier sender
+      from: 'TitanFit Gym <onboarding@resend.dev>',
       to: [email],
       subject: 'TitanFit — Verify Your Email OTP 🏋️‍♂️',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #0d0d0d; color: #ffffff;">
-          <h2 style="color: #ff3b30; text-align: center;">TITANFIT GYM</h2>
-          <p style="font-size: 16px;">Hello <strong>${name || 'Athlete'}</strong>,</p>
-          <p style="font-size: 14px; color: #cccccc;">Your One-Time Password (OTP) for account verification is:</p>
-          <div style="text-align: center; margin: 25px 0;">
-            <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #ffffff; background: #222222; padding: 10px 20px; border-radius: 6px; border: 1px solid #ff3b30;">${otp}</span>
+        <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #0f172a; color: #ffffff; border-radius: 12px;">
+          <h2 style="color: #f59e0b; text-align: center;">TITANFIT GYM</h2>
+          <p>Hello <strong>${name}</strong>,</p>
+          <p>Your OTP for email verification is:</p>
+          <div style="text-align: center; margin: 20px 0;">
+            <span style="font-size: 28px; font-weight: bold; letter-spacing: 6px; background: #1e293b; padding: 10px 24px; border-radius: 8px; color: #f59e0b;">${otp}</span>
           </div>
-          <p style="font-size: 12px; color: #888888; text-align: center;">This OTP is valid for 10 minutes. Do not share it with anyone.</p>
+          <p style="font-size: 12px; color: #94a3b8;">This OTP will expire in 10 minutes.</p>
         </div>
       `
     });
 
     if (error) {
-      console.error('Resend Email Error:', error);
       return { success: false, error };
     }
 
     return { success: true, data };
   } catch (err) {
-    console.error('Send OTP Execution Error:', err.message);
     return { success: false, error: err.message };
   }
 };
