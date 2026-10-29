@@ -16,6 +16,8 @@ const {
 const { protect, isAdmin } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
 // Standard Authentication Routes
 router.post('/register', registerUser);
 router.post('/login', loginUser);
@@ -32,9 +34,14 @@ router.post(
 
 // Google OAuth Routes
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+// FIXED: failureRedirect points to Frontend login route
 router.get(
   '/google/callback',
-  passport.authenticate('google', { session: false, failureRedirect: '/login' }),
+  passport.authenticate('google', { 
+    session: false, 
+    failureRedirect: `${FRONTEND_URL}/login?error=google_auth_failed` 
+  }),
   googleAuthCallback
 );
 
