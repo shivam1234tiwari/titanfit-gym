@@ -44,7 +44,20 @@ const userSchema = new mongoose.Schema({
         default: Date.now
       }
     }
-  ]
+  ],
+  // Add these fields in your User Schema
+otp: {
+  type: String,
+  default: null
+},
+otpExpires: {
+  type: Date,
+  default: null
+},
+isEmailVerified: {
+  type: Boolean,
+  default: false
+}
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

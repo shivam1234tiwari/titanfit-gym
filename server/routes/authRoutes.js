@@ -10,7 +10,9 @@ const {
   getAllMembers,
   updateMemberByAdmin,
   googleAuthCallback,
-  uploadProfilePic
+  uploadProfilePic,
+  sendOtp,
+  verifyOtp
 } = require('../controllers/authController');
 
 const { protect, isAdmin } = require('../middleware/authMiddleware');
@@ -23,6 +25,10 @@ router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.get('/profile', protect, getUserProfile);
 router.put('/profile', protect, updateUserProfile);
+
+// Resend OTP Routes
+router.post('/send-otp', sendOtp);
+router.post('/verify-otp', verifyOtp);
 
 // Multer Image Upload Route
 router.post(

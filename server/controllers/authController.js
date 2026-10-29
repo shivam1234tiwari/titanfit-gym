@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Contact = require('../models/Contact');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const sendOtpEmail = require('../utils/sendOtpEmail');
 
 const sendEmail = require('../utils/sendEmail');
 const {
@@ -646,5 +647,98 @@ exports.getAllMessages = async (req, res) => {
       success: false,
       message: error.message
     });
+  }
+};
+
+/**
+ * @desc Generate & Send OTP to User Email via Resend
+ * @route POST /api/auth/send-otp
+ */
+exports.sendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email address is required' });
+    }
+
+    const formattedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: formattedEmail });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'No registered user found with this email' });
+    }
+
+    // 1. Generate 6-digit random OTP
+    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // 2. Set expiry (default 10 minutes)
+    const expireMinutes = parseInt(process.env.OTP_EXPIRE_MINUTES) || 10;
+    const otpExpires = new Date(Date.now() + expireMinutes * 60 * 1000);
+
+    // 3. Save OTP in DB
+    user.otp = generatedOtp;
+    user.otpExpires = otpExpires;
+    await user.save();
+
+    // 4. Send email via Resend
+    const result = await sendOtpEmail(user.email, user.name, generatedOtp);
+
+    if (!result.success) {
+      return res.status(500).json({ success: false, message: 'Failed to deliver OTP email.' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'OTP has been sent successfully to your email!'
+    });
+  } catch (error) {
+    console.error('Send OTP Error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * @desc Verify Email OTP
+ * @route POST /api/auth/verify-otp
+ */
+exports.verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: 'Email and OTP are required' });
+    }
+
+    const formattedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: formattedEmail });
+
+    if (!user || !user.otp) {
+      return res.status(400).json({ success: false, message: 'Invalid request or OTP not requested' });
+    }
+
+    // 1. Check expiration
+    if (new Date() > user.otpExpires) {
+      return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' });
+    }
+
+    // 2. Match OTP
+    if (user.otp !== String(otp).trim()) {
+      return res.status(400).json({ success: false, message: 'Incorrect OTP. Please try again.' });
+    }
+
+    // 3. Mark user verified and clear OTP
+    user.isEmailVerified = true;
+    user.otp = null;
+    user.otpExpires = null;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Email verified successfully!'
+    });
+  } catch (error) {
+    console.error('Verify OTP Error:', error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
