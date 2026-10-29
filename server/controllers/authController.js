@@ -55,7 +55,7 @@ exports.registerUser = async (req, res) => {
       });
     }
 
-    // 2. Validate email
+    // 2. Validate email format
     const formattedEmail = email.toLowerCase().trim();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -73,7 +73,7 @@ exports.registerUser = async (req, res) => {
     if (!phoneRegex.test(formattedPhone)) {
       return res.status(400).json({
         success: false,
-        message: 'Please enter a valid 10-digit mobile number'
+        message: 'Please enter a valid 10-digit mobile number starting with 6-9'
       });
     }
 
@@ -94,14 +94,10 @@ exports.registerUser = async (req, res) => {
     });
 
     if (existingUser) {
-      const field =
-        existingUser.email === formattedEmail
-          ? 'Email'
-          : 'Phone number';
-
+      const field = existingUser.email === formattedEmail ? 'Email' : 'Phone number';
       return res.status(400).json({
         success: false,
-        message: `${field} is already registered`
+        message: `${field} is already registered. Please login or use a different ${field.toLowerCase()}.`
       });
     }
 
@@ -119,7 +115,7 @@ exports.registerUser = async (req, res) => {
       height: height || ''
     });
 
-    // 8. Send welcome email
+    // 8. Send welcome email asynchronously
     void sendEmailSafely({
       to: user.email,
       subject: 'Welcome to TitanFit Gym! 🏋️‍♂️',
@@ -144,10 +140,9 @@ exports.registerUser = async (req, res) => {
     });
   } catch (error) {
     console.error('Registration Error:', error);
-
     return res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Internal server error during registration'
     });
   }
 };
@@ -160,10 +155,7 @@ exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const formattedEmail = String(email || '')
-      .toLowerCase()
-      .trim();
-
+    const formattedEmail = String(email || '').toLowerCase().trim();
     const user = await User.findOne({ email: formattedEmail });
 
     if (!user) {
@@ -173,10 +165,7 @@ exports.loginUser = async (req, res) => {
       });
     }
 
-    const isMatch = await bcrypt.compare(
-      password || '',
-      user.password
-    );
+    const isMatch = await bcrypt.compare(password || '', user.password);
 
     if (!isMatch) {
       return res.status(401).json({
@@ -185,10 +174,7 @@ exports.loginUser = async (req, res) => {
       });
     }
 
-    const token = generateToken(
-      user._id,
-      user.role || 'member'
-    );
+    const token = generateToken(user._id, user.role || 'member');
 
     return res.status(200).json({
       success: true,
@@ -207,7 +193,6 @@ exports.loginUser = async (req, res) => {
     });
   } catch (error) {
     console.error('Login Error:', error);
-
     return res.status(500).json({
       success: false,
       message: 'Server error during login',
@@ -278,7 +263,6 @@ exports.getUserProfile = async (req, res) => {
     });
   } catch (error) {
     console.error('Get Profile Error:', error);
-
     return res.status(500).json({
       success: false,
       message: error.message
@@ -356,7 +340,6 @@ exports.updateUserProfile = async (req, res) => {
     });
   } catch (error) {
     console.error('Update Profile Error:', error);
-
     return res.status(500).json({
       success: false,
       message: error.message
@@ -367,7 +350,6 @@ exports.updateUserProfile = async (req, res) => {
 /**
  * @desc Upload user profile picture
  * @route POST /api/auth/upload-avatar
- * @access Private
  */
 exports.uploadProfilePic = async (req, res) => {
   try {
@@ -398,7 +380,6 @@ exports.uploadProfilePic = async (req, res) => {
     });
   } catch (error) {
     console.error('Upload Profile Picture Error:', error);
-
     return res.status(500).json({
       success: false,
       message: error.message
@@ -412,19 +393,12 @@ exports.uploadProfilePic = async (req, res) => {
  */
 exports.googleAuthCallback = async (req, res) => {
   try {
-    const token = generateToken(
-      req.user._id,
-      req.user.role || 'member'
-    );
-
+    const token = generateToken(req.user._id, req.user.role || 'member');
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-    return res.redirect(
-      `${frontendUrl}?token=${encodeURIComponent(token)}`
-    );
+    return res.redirect(`${frontendUrl}?token=${encodeURIComponent(token)}`);
   } catch (error) {
     console.error('Google Auth Error:', error);
-
     return res.status(500).json({
       success: false,
       message: 'Google Auth Failed'
@@ -433,7 +407,7 @@ exports.googleAuthCallback = async (req, res) => {
 };
 
 /**
- * @desc Get all members (Legacy/General)
+ * @desc Get all members
  * @route GET /api/auth/members
  */
 exports.getAllMembers = async (req, res) => {
@@ -450,7 +424,6 @@ exports.getAllMembers = async (req, res) => {
     });
   } catch (error) {
     console.error('Get Members Error:', error);
-
     return res.status(500).json({
       success: false,
       message: error.message
@@ -487,7 +460,6 @@ exports.updateMemberByAdmin = async (req, res) => {
     });
   } catch (error) {
     console.error('Admin Update Member Error:', error);
-
     return res.status(500).json({
       success: false,
       message: error.message
@@ -500,7 +472,7 @@ exports.updateMemberByAdmin = async (req, res) => {
    ========================================================================== */
 
 /**
- * @desc Get all registered members with populated assigned trainers for Admin
+ * @desc Get all registered members for Admin
  * @route GET /api/admin/users
  */
 exports.getAllUsers = async (req, res) => {
@@ -656,6 +628,10 @@ exports.getAllMessages = async (req, res) => {
   }
 };
 
+/* ==========================================================================
+   RESEND EMAIL OTP CONTROLLERS
+   ========================================================================== */
+
 /**
  * @desc Generate & Send OTP to User Email via Resend
  * @route POST /api/auth/send-otp
@@ -672,14 +648,17 @@ exports.sendOtp = async (req, res) => {
     const user = await User.findOne({ email: formattedEmail });
 
     if (!user) {
-      return res.status(404).json({ success: false, message: 'No registered user found with this email' });
+      return res.status(404).json({
+        success: false,
+        message: 'No registered user found with this email. Please sign up first.'
+      });
     }
 
     // 1. Generate 6-digit random OTP
     const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
     // 2. Set expiry (default 10 minutes)
-    const expireMinutes = parseInt(process.env.OTP_EXPIRE_MINUTES) || 10;
+    const expireMinutes = parseInt(process.env.OTP_EXPIRE_MINUTES, 10) || 10;
     const otpExpires = new Date(Date.now() + expireMinutes * 60 * 1000);
 
     // 3. Save OTP in DB
@@ -691,11 +670,11 @@ exports.sendOtp = async (req, res) => {
     const result = await sendOtpEmail(user.email, user.name, generatedOtp);
 
     if (!result.success) {
-      console.error('Resend Delivery Internal Failure:', result.error);
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Failed to deliver OTP email. Check Resend configuration.',
-        details: result.error
+      console.error('Resend Delivery Error:', result.error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to deliver OTP email via Resend.',
+        error: result.error
       });
     }
 
@@ -704,8 +683,11 @@ exports.sendOtp = async (req, res) => {
       message: 'OTP has been sent successfully to your email!'
     });
   } catch (error) {
-    console.error('Send OTP Critical Error:', error);
-    return res.status(500).json({ success: false, message: error.message });
+    console.error('Send OTP Critical Failure:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error while generating OTP'
+    });
   }
 };
 
@@ -750,6 +732,9 @@ exports.verifyOtp = async (req, res) => {
     });
   } catch (error) {
     console.error('Verify OTP Error:', error);
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during OTP verification'
+    });
   }
 };
