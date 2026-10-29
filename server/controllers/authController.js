@@ -9,13 +9,17 @@ const {
   planActivatedTemplate
 } = require('../utils/emailTemplates');
 
-// Helper: Generate JWT Token
+// Helper: Generate JWT Token (Enforced Environment Variable)
 const generateToken = (id, role = 'member') => {
-  return jwt.sign(
-    { id, role },
-    process.env.JWT_SECRET || 'titanfit_secret_key',
-    { expiresIn: '30d' }
-  );
+  const secret = process.env.JWT_SECRET;
+
+  if (!secret) {
+    throw new Error('FATAL SECURITY ERROR: JWT_SECRET environment variable is missing.');
+  }
+
+  return jwt.sign({ id, role }, secret, {
+    expiresIn: '30d'
+  });
 };
 
 // Helper: Send email without failing the main request
@@ -42,6 +46,7 @@ exports.registerUser = async (req, res) => {
       height
     } = req.body;
 
+    // 1. Validate required fields
     if (!name || !email || !password || !phoneNumber) {
       return res.status(400).json({
         success: false,
@@ -49,6 +54,7 @@ exports.registerUser = async (req, res) => {
       });
     }
 
+    // 2. Validate email
     const formattedEmail = email.toLowerCase().trim();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -59,6 +65,7 @@ exports.registerUser = async (req, res) => {
       });
     }
 
+    // 3. Validate Indian mobile number
     const formattedPhone = String(phoneNumber).trim();
     const phoneRegex = /^[6-9]\d{9}$/;
 
@@ -69,6 +76,7 @@ exports.registerUser = async (req, res) => {
       });
     }
 
+    // 4. Validate password length
     if (password.length < 6 || password.length > 16) {
       return res.status(400).json({
         success: false,
@@ -76,6 +84,7 @@ exports.registerUser = async (req, res) => {
       });
     }
 
+    // 5. Check duplicate email or phone
     const existingUser = await User.findOne({
       $or: [
         { email: formattedEmail },
@@ -95,9 +104,11 @@ exports.registerUser = async (req, res) => {
       });
     }
 
+    // 6. Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // 7. Create user
     const user = await User.create({
       name: name.trim(),
       email: formattedEmail,
@@ -107,12 +118,14 @@ exports.registerUser = async (req, res) => {
       height: height || ''
     });
 
+    // 8. Send welcome email
     void sendEmailSafely({
       to: user.email,
       subject: 'Welcome to TitanFit Gym! 🏋️‍♂️',
       html: welcomeEmailTemplate(user.name)
     });
 
+    // 9. Return registration response
     return res.status(201).json({
       success: true,
       message: 'Registration successful!',
@@ -425,7 +438,8 @@ exports.getAllMembers = async (req, res) => {
     return res.status(200).json({
       success: true,
       users: members,
-      data: members
+      data: members,
+      members: members
     });
   } catch (error) {
     console.error('Get Members Error:', error);
@@ -475,7 +489,7 @@ exports.updateMemberByAdmin = async (req, res) => {
 };
 
 /* ==========================================================================
-   ADMIN CONTROLLERS & CONTACT FORM CONTROLLERS
+   ADMIN & CONTACT FORM CONTROLLERS
    ========================================================================== */
 
 /**
