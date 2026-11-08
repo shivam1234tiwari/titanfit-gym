@@ -1,5 +1,6 @@
 const express = require('express');
 const passport = require('passport');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 
 const {
@@ -20,15 +21,43 @@ const upload = require('../middleware/uploadMiddleware');
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// Standard Authentication Routes
-router.post('/register', registerUser);
-router.post('/login', loginUser);
+// ---------------- RATE LIMITERS SETUP ----------------
+
+// Strict Limiter: For OTP generation & verification (Brute-force protection)
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 Minutes
+  max: 5,                   // Max 5 OTP requests per 15 mins per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many OTP requests from this IP. Please try again after 15 minutes.'
+  }
+});
+
+// Auth Limiter: For Login & Registration routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 Minutes
+  max: 10,                  // Max 10 attempts per 15 mins per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many authentication attempts. Please try again after 15 minutes.'
+  }
+});
+
+// ---------------- ROUTES ----------------
+
+// Standard Authentication Routes (Rate-limited)
+router.post('/register', authLimiter, registerUser);
+router.post('/login', authLimiter, loginUser);
 router.get('/profile', protect, getUserProfile);
 router.put('/profile', protect, updateUserProfile);
 
-// Resend OTP Routes
-router.post('/send-otp', sendOtp);
-router.post('/verify-otp', verifyOtp);
+// Resend OTP Routes (Strictly Rate-limited)
+router.post('/send-otp', otpLimiter, sendOtp);
+router.post('/verify-otp', otpLimiter, verifyOtp);
 
 // Multer Image Upload Route
 router.post(
@@ -41,7 +70,7 @@ router.post(
 // Google OAuth Routes
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-// FIXED: failureRedirect points to Frontend login route
+// Google Callback Route
 router.get(
   '/google/callback',
   passport.authenticate('google', { 
