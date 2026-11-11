@@ -8,7 +8,8 @@ const userSchema = new mongoose.Schema({
     type: String, 
     required: true, 
     trim: true,
-    match: [/^[6-9]\d{9}$/, 'Please provide a valid 10-digit mobile number']
+    // FIX: Updated regex from /^[6-9]\d{9}$/ to /^[1-9]\d{9}$/ to sync with authController
+    match: [/^[1-9]\d{9}$/, 'Please provide a valid 10-digit mobile number']
   },
   role: { type: String, enum: ['member', 'admin'], default: 'member' },
   weight: { type: String, default: '' },
@@ -21,7 +22,6 @@ const userSchema = new mongoose.Schema({
   },
   membershipPlan: { type: String, default: 'Free Trial' },
 
-  // ADD THIS REFERENCE TO FIX THE 500 POPULATE CRASH
   assignedTrainer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Trainer',
@@ -45,19 +45,18 @@ const userSchema = new mongoose.Schema({
       }
     }
   ],
-  // Add these fields in your User Schema
-otp: {
-  type: String,
-  default: null
-},
-otpExpires: {
-  type: Date,
-  default: null
-},
-isEmailVerified: {
-  type: Boolean,
-  default: false
-}
+  otp: {
+    type: String,
+    default: null
+  },
+  otpExpires: {
+    type: Date,
+    default: null
+  },
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

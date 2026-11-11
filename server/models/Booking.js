@@ -4,7 +4,8 @@ const bookingSchema = new mongoose.Schema(
   {
     fullName: { type: String, required: true },
     email: { type: String, required: true },
-    phone: { type: String, required: true },
+    phone: { type: String, required: true,  trim: true,
+    match: [/^[1-9]\d{9}$/, 'Please provide a valid 10-digit mobile number'] },
     plan: { type: String, default: 'Free Trial' },
     preferredDate: { type: Date, required: true },
     preferredTime: { type: String, required: true },

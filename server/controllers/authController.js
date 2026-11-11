@@ -10,7 +10,7 @@ const {
   planActivatedTemplate
 } = require('../utils/emailTemplates');
 
-// Helper: Generate JWT Token (Enforced Environment Variable)
+// Helper: Generate JWT Token
 const generateToken = (id, role = 'member') => {
   const secret = process.env.JWT_SECRET;
 
@@ -66,14 +66,14 @@ exports.registerUser = async (req, res) => {
       });
     }
 
-    // 3. Validate Indian mobile number
+    // 3. Validate 10-digit mobile number (Allows digits starting 1-9)
     const formattedPhone = String(phoneNumber).trim();
-    const phoneRegex = /^[6-9]\d{9}$/;
+    const phoneRegex = /^[1-9]\d{9}$/;
 
     if (!phoneRegex.test(formattedPhone)) {
       return res.status(400).json({
         success: false,
-        message: 'Please enter a valid 10-digit mobile number starting with 6-9'
+        message: 'Please enter a valid 10-digit mobile number'
       });
     }
 
@@ -105,14 +105,15 @@ exports.registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 7. Create user
+    // 7. Create user with isEmailVerified: false
     const user = await User.create({
       name: name.trim(),
       email: formattedEmail,
       phoneNumber: formattedPhone,
       password: hashedPassword,
       weight: weight || '',
-      height: height || ''
+      height: height || '',
+      isEmailVerified: false
     });
 
     // 8. Send welcome email asynchronously
@@ -125,7 +126,7 @@ exports.registerUser = async (req, res) => {
     // 9. Return registration response
     return res.status(201).json({
       success: true,
-      message: 'Registration successful!',
+      message: 'Registration successful! Please verify your email via OTP.',
       token: generateToken(user._id, user.role || 'member'),
       user: {
         id: user._id,
@@ -135,7 +136,8 @@ exports.registerUser = async (req, res) => {
         phoneNumber: user.phoneNumber,
         weight: user.weight,
         height: user.height,
-        role: user.role || 'member'
+        role: user.role || 'member',
+        isEmailVerified: user.isEmailVerified
       }
     });
   } catch (error) {
@@ -188,7 +190,8 @@ exports.loginUser = async (req, res) => {
         phoneNumber: user.phoneNumber,
         weight: user.weight,
         height: user.height,
-        profilePic: user.profilePic
+        profilePic: user.profilePic,
+        isEmailVerified: user.isEmailVerified
       }
     });
   } catch (error) {
