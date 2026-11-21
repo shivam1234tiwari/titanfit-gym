@@ -21,13 +21,13 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
   };
 
   return (
-    <nav className="fixed top-0 left-0 w-full bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 z-40">
+    <nav className="fixed top-0 left-0 w-full bg-zinc-950/85 backdrop-blur-md border-b border-zinc-800/80 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
         {/* Logo */}
         <a href="#" className="flex items-center gap-2 text-2xl font-black tracking-wider text-white">
-          <Dumbbell className="w-8 h-8 text-amber-500" />
-          <span>TITAN<span className="text-amber-500">FIT</span></span>
+          <Dumbbell className="w-8 h-8 text-red-500" />
+          <span>TITAN<span className="text-red-500">FIT</span></span>
         </a>
 
         {/* Desktop Links */}
@@ -36,7 +36,7 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
             <a
               key={link.name}
               href={link.href}
-              className="text-slate-300 hover:text-amber-500 text-sm font-semibold transition-colors"
+              className="text-zinc-300 hover:text-red-500 text-sm font-semibold transition-colors"
             >
               {link.name}
             </a>
@@ -50,7 +50,7 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
                 <button
                   type="button"
                   onClick={onOpenAdmin}
-                  className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 font-bold px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 font-bold px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer"
                 >
                   <ShieldCheck className="w-4 h-4" />
                   <span>Admin</span>
@@ -61,16 +61,16 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
               <button
                 type="button"
                 onClick={onOpenProfile}
-                className="inline-flex items-center gap-2 bg-slate-900 border border-slate-800 hover:border-amber-500 text-slate-200 font-bold px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:border-red-500 text-zinc-200 font-bold px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer"
               >
                 {currentUser.profilePic ? (
                   <img
                     src={currentUser.profilePic}
                     alt="Avatar"
-                    className="w-5 h-5 rounded-full object-cover border border-amber-500/50"
+                    className="w-5 h-5 rounded-full object-cover border border-red-500/50"
                   />
                 ) : (
-                  <User className="w-4 h-4 text-amber-500" />
+                  <User className="w-4 h-4 text-red-500" />
                 )}
                 <span>{currentUser.name ? currentUser.name.split(' ')[0] : 'Profile'}</span>
               </button>
@@ -89,7 +89,7 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
             <button
               type="button"
               onClick={onOpenAuth}
-              className="inline-flex items-center gap-1.5 text-slate-300 hover:text-amber-500 text-sm font-bold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-zinc-300 hover:text-red-500 text-sm font-bold transition-colors cursor-pointer"
             >
               <LogIn className="w-4 h-4" />
               <span>Log In</span>
@@ -99,7 +99,7 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
           <button
             type="button"
             onClick={onOpenBooking}
-            className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md shadow-amber-500/20 cursor-pointer"
+            className="bg-red-600 text-white hover:bg-red-500 font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md shadow-red-600/25 cursor-pointer"
           >
             Free Trial Pass
           </button>
@@ -109,7 +109,7 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="md:hidden text-slate-300 hover:text-white focus:outline-none"
+          className="md:hidden text-zinc-300 hover:text-white focus:outline-none"
         >
           {isOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
         </button>
@@ -117,20 +117,20 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
 
       {/* Mobile Drawer */}
       {isOpen && (
-        <div className="md:hidden bg-slate-900 border-b border-slate-800 px-4 pt-4 pb-6 space-y-4">
+        <div className="md:hidden bg-zinc-900 border-b border-zinc-800 px-4 pt-4 pb-6 space-y-4">
           {navLinks.map((link) => (
             <a
               key={link.name}
               href={link.href}
               onClick={() => setIsOpen(false)}
-              className="block text-slate-200 hover:text-amber-500 text-base font-semibold"
+              className="block text-zinc-200 hover:text-red-500 text-base font-semibold"
             >
               {link.name}
             </a>
           ))}
 
           {currentUser ? (
-            <div className="space-y-2 pt-2 border-t border-slate-800">
+            <div className="space-y-2 pt-2 border-t border-zinc-800">
               {currentUser.role === 'admin' && (
                 <button
                   type="button"
@@ -138,7 +138,7 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
                     setIsOpen(false);
                     if (onOpenAdmin) onOpenAdmin();
                   }}
-                  className="w-full text-left flex items-center gap-2 font-bold text-amber-400 py-2 text-sm"
+                  className="w-full text-left flex items-center gap-2 font-bold text-red-400 py-2 text-sm"
                 >
                   <ShieldCheck className="w-4 h-4" />
                   <span>Admin Dashboard</span>
@@ -151,9 +151,9 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
                   setIsOpen(false);
                   if (onOpenProfile) onOpenProfile();
                 }}
-                className="w-full text-left flex items-center gap-2 font-bold text-slate-200 py-2 text-sm"
+                className="w-full text-left flex items-center gap-2 font-bold text-zinc-200 py-2 text-sm"
               >
-                <User className="w-4 h-4 text-amber-500" />
+                <User className="w-4 h-4 text-red-500" />
                 <span>My Profile ({currentUser.name})</span>
               </button>
 
@@ -176,7 +176,7 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
                 setIsOpen(false);
                 onOpenAuth();
               }}
-              className="w-full text-left font-bold text-slate-300 py-2 text-sm"
+              className="w-full text-left font-bold text-zinc-300 py-2 text-sm"
             >
               Log In / Sign Up
             </button>
@@ -188,7 +188,7 @@ export default function Navbar({ onOpenBooking, onOpenAuth, onOpenProfile, curre
               setIsOpen(false);
               onOpenBooking();
             }}
-            className="w-full bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold py-3 rounded-xl text-xs"
+            className="w-full bg-red-600 text-white hover:bg-red-500 font-bold py-3 rounded-xl text-xs"
           >
             Free Trial Pass
           </button>

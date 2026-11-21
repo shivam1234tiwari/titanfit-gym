@@ -111,8 +111,7 @@ export default function MembershipPlans({ onSelectPlan }) {
           onSelectPlan(plan.name, updatedUser);
         }
 
-        // Default alert(...) browser popup ko yahan custom notification se replace kar diya hai
-        showToast(`🎉 ${plan.name} Plan activated successfully!`, 'success');
+        showToast(`${plan.name} Plan activated successfully!`, 'success');
       } else {
         showToast(data.message || 'Failed to activate plan.', 'error');
       }
@@ -125,8 +124,11 @@ export default function MembershipPlans({ onSelectPlan }) {
   };
 
   return (
-    <section id="membership" className="relative bg-slate-950 py-20">
-      {/* Custom Modern Floating Toast Notification */}
+    <section id="membership" className="relative bg-zinc-950 py-20 border-t border-zinc-900">
+      {/* Subtle Ambient Glow */}
+      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-red-600/5 rounded-full blur-3xl" />
+
+      {/* Custom Floating Toast Notification */}
       {notification.show && (
         <div className="fixed top-6 right-6 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
           <div
@@ -136,23 +138,23 @@ export default function MembershipPlans({ onSelectPlan }) {
                 : 'bg-rose-950/90 border-rose-500/30 text-rose-300'
             }`}
           >
-            <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+            <Sparkles className="w-5 h-5 text-red-400 shrink-0" />
             <span className="text-xs font-bold tracking-wide">{notification.message}</span>
           </div>
         </div>
       )}
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="mx-auto mb-16 max-w-2xl text-center">
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-widest text-amber-500">
+          <h2 className="mb-2 text-sm font-bold uppercase tracking-[0.2em] text-red-500">
             Membership Plans
           </h2>
-          <h3 className="text-3xl font-extrabold text-white sm:text-4xl">
+          <h3 className="text-3xl font-black text-white sm:text-4xl">
             Invest In Your Health
           </h3>
-          <p className="mt-2 text-sm text-slate-400 sm:text-base">
-            Flexible plans designed for all fitness levels. Instant one-click activation.
+          <p className="mt-3 text-sm text-zinc-400 sm:text-base">
+            Flexible plans designed for all fitness levels. Instant one-click activation synced to your Member Dashboard.
           </p>
         </div>
 
@@ -161,14 +163,14 @@ export default function MembershipPlans({ onSelectPlan }) {
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`relative flex flex-col rounded-2xl p-8 transition-all ${
+              className={`relative flex flex-col rounded-2xl p-8 transition-all duration-300 ${
                 plan.featured
-                  ? 'border-2 border-amber-500 bg-slate-900 shadow-xl shadow-amber-500/10'
-                  : 'border border-slate-800 bg-slate-900/40'
+                  ? 'border-2 border-red-600 bg-zinc-900 shadow-2xl shadow-red-600/15 md:-translate-y-2'
+                  : 'border border-zinc-800 bg-zinc-900/50 hover:border-zinc-700'
               }`}
             >
               {plan.featured && (
-                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-amber-500 px-3 py-1 text-xs font-black uppercase tracking-wider text-slate-950 shadow-md">
+                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-red-600 px-3.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-red-600/30">
                   Most Popular
                 </span>
               )}
@@ -179,7 +181,7 @@ export default function MembershipPlans({ onSelectPlan }) {
                 <span className="text-4xl font-black text-white sm:text-5xl">
                   ₹{plan.price}
                 </span>
-                <span className="text-sm font-medium text-slate-400">
+                <span className="text-sm font-medium text-zinc-400">
                   / {plan.period}
                 </span>
               </div>
@@ -188,9 +190,9 @@ export default function MembershipPlans({ onSelectPlan }) {
                 {plan.features.map((feature) => (
                   <li
                     key={feature}
-                    className="flex items-start gap-3 text-sm text-slate-300"
+                    className="flex items-start gap-3 text-sm text-zinc-300"
                   >
-                    <Check className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+                    <Check className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
                     <span>{feature}</span>
                   </li>
                 ))}
@@ -199,7 +201,11 @@ export default function MembershipPlans({ onSelectPlan }) {
               <button
                 onClick={() => handleDirectActivate(plan)}
                 disabled={loadingPlan === plan.id}
-                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/10 text-xs uppercase tracking-wider disabled:opacity-50"
+                className={`w-full font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all text-xs uppercase tracking-wider disabled:opacity-50 cursor-pointer ${
+                  plan.featured
+                    ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/25'
+                    : 'bg-zinc-950 hover:bg-red-600 text-white border border-zinc-800 hover:border-red-600'
+                }`}
               >
                 <CheckCircle className="w-4 h-4" />
                 {loadingPlan === plan.id ? 'Activating...' : `Activate ${plan.name}`}
